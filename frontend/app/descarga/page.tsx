@@ -85,10 +85,8 @@ export default function DescargaPage() {
         year: "numeric"
     })
 
-    // Función para imprimir la carta (usa el elemento existente del paso anterior)
+    // Función para imprimir la carta
     const imprimirCarta = () => {
-        // Buscamos la carta que ya está en el DOM de la página anterior
-        // Como no podemos acceder directamente, usamos el contenido que ya generamos
         const contenido = document.getElementById("carta-print-content")
         if (!contenido) return
 
@@ -103,17 +101,50 @@ export default function DescargaPage() {
                 <title>Caso Especial — ${datos.nombre}</title>
                 <style>
                     * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body { font-family: Georgia, 'Times New Roman', serif; font-size: 13pt; line-height: 1.6; padding: 2.5cm 3cm; color: #000; }
-                    table { width: 100%; border-collapse: collapse; margin: 1.2em 0; }
-                    th, td { border: 1px solid #333; padding: 8px 12px; text-align: left; }
-                    th { background: #f0f0f0; font-weight: bold; }
+                    body { 
+                        font-family: Georgia, 'Times New Roman', serif; 
+                        font-size: 11pt; 
+                        line-height: 1.4; 
+                        padding: 1.5cm 2cm; 
+                        color: #000;
+                        max-height: 29.7cm;
+                        overflow: hidden;
+                    }
+                    table { 
+                        width: 100%; 
+                        border-collapse: collapse; 
+                        margin: 0.8em 0;
+                        font-size: 10pt;
+                    }
+                    th, td { 
+                        border: 1px solid #333; 
+                        padding: 4px 8px; 
+                        text-align: left; 
+                    }
+                    th { 
+                        background: #f0f0f0; 
+                        font-weight: bold; 
+                        font-size: 9pt;
+                    }
                     .text-right { text-align: right; }
                     .text-center { text-align: center; }
                     .text-justify { text-align: justify; }
                     .bold { font-weight: bold; }
                     .underline { text-decoration: underline; }
-                    .firma { margin-top: 80px; }
-                    @page { size: Letter; margin: 2.5cm 3cm; }
+                    .firma { 
+                        margin-top: 40px; 
+                        font-size: 10pt;
+                    }
+                    .firma p {
+                        margin: 2px 0;
+                    }
+                    .mb-1 { margin-bottom: 0.5em; }
+                    .mb-2 { margin-bottom: 1em; }
+                    .mb-3 { margin-bottom: 1.5em; }
+                    @page { 
+                        size: Letter; 
+                        margin: 1.5cm 2cm;
+                    }
                 </style>
             </head>
             <body>${contenido.innerHTML}</body>
@@ -124,7 +155,7 @@ export default function DescargaPage() {
         setTimeout(() => { ventana.print() }, 400)
     }
 
-    // Función para imprimir la malla (con colores)
+    // Función para imprimir la malla
     const imprimirMalla = () => {
         const ventana = window.open("", "_blank", "width=1200,height=800")
         if (!ventana) return
@@ -132,10 +163,10 @@ export default function DescargaPage() {
         // Función para obtener el color según el estado
         const getEstadoColor = (estado: string) => {
             switch (estado) {
-                case "aprobada": return "#fef9c3"; // amarillo claro
-                case "inscrita": return "#dcfce7"; // verde claro
-                case "caso": return "#fee2e2"; // rojo claro
-                default: return "#f9fafb"; // gris claro
+                case "aprobada": return "#fef9c3";
+                case "inscrita": return "#dcfce7";
+                case "caso": return "#fee2e2";
+                default: return "#f9fafb";
             }
         }
 
@@ -150,10 +181,10 @@ export default function DescargaPage() {
 
         const getEstadoTexto = (estado: string) => {
             switch (estado) {
-                case "aprobada": return "APROBADA";
-                case "inscrita": return "INSCRITA";
-                case "caso": return "CASO ESPECIAL";
-                default: return "PENDIENTE";
+                case "aprobada": return "APROB";
+                case "inscrita": return "INSCR";
+                case "caso": return "CASO";
+                default: return "PEND";
             }
         }
 
@@ -166,164 +197,169 @@ export default function DescargaPage() {
                 <style>
                     * { margin: 0; padding: 0; box-sizing: border-box; }
                     body { 
-                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
-                        font-size: 11pt; 
-                        line-height: 1.5; 
-                        padding: 2rem;
-                        background: #f9fafb;
+                        font-family: 'Arial', Helvetica, sans-serif; 
+                        font-size: 9pt; 
+                        line-height: 1.3; 
+                        padding: 1cm;
+                        background: white;
                         color: #111827;
+                        max-height: 27.9cm;
+                        overflow: hidden;
                     }
                     .header {
-                        margin-bottom: 2rem;
+                        margin-bottom: 0.8cm;
                         text-align: center;
                     }
                     .header h1 {
-                        font-size: 20pt;
+                        font-size: 14pt;
                         font-weight: 800;
                         color: #1e3a8a;
-                        margin-bottom: 0.5rem;
+                        margin-bottom: 0.2cm;
                     }
                     .header h2 {
-                        font-size: 16pt;
+                        font-size: 12pt;
                         font-weight: 700;
                         color: #b91c1c;
-                        margin-bottom: 0.5rem;
+                        margin-bottom: 0.2cm;
                     }
                     .header p {
-                        font-size: 11pt;
-                        color: #6b7280;
+                        font-size: 10pt;
+                        color: #4b5563;
                     }
                     .info-grid {
                         display: grid;
                         grid-template-columns: repeat(4, 1fr);
-                        gap: 1rem;
-                        margin-bottom: 2rem;
-                        padding: 1rem;
-                        background: white;
-                        border: 1px solid #e5e7eb;
-                        border-radius: 8px;
+                        gap: 0.3cm;
+                        margin-bottom: 0.8cm;
+                        padding: 0.3cm;
+                        background: #f3f4f6;
+                        border: 1px solid #d1d5db;
+                        border-radius: 4px;
                     }
                     .info-item {
                         text-align: center;
                     }
                     .info-label {
-                        font-size: 9pt;
+                        font-size: 7pt;
                         text-transform: uppercase;
-                        letter-spacing: 0.05em;
                         color: #6b7280;
-                        margin-bottom: 0.25rem;
                     }
                     .info-value {
-                        font-size: 14pt;
+                        font-size: 10pt;
                         font-weight: 700;
                         color: #1f2937;
                     }
+                    .semestres-container {
+                        display: grid;
+                        grid-template-columns: repeat(2, 1fr);
+                        gap: 0.4cm;
+                    }
                     .semestre {
                         background: white;
-                        border: 1px solid #e5e7eb;
-                        border-radius: 8px;
-                        margin-bottom: 1.5rem;
+                        border: 1px solid #d1d5db;
+                        border-radius: 4px;
                         overflow: hidden;
+                        break-inside: avoid;
                     }
                     .semestre-header {
-                        background: #f3f4f6;
-                        padding: 1rem;
-                        border-bottom: 1px solid #e5e7eb;
+                        background: #e5e7eb;
+                        padding: 0.2cm 0.3cm;
                         display: flex;
                         align-items: center;
-                        gap: 1rem;
+                        gap: 0.2cm;
                     }
                     .semestre-numero {
-                        width: 32px;
-                        height: 32px;
+                        width: 20px;
+                        height: 20px;
                         background: #1e3a8a;
                         color: white;
                         font-weight: 700;
-                        font-size: 12pt;
+                        font-size: 9pt;
                         display: flex;
                         align-items: center;
                         justify-content: center;
                         border-radius: 50%;
                     }
                     .semestre-titulo {
-                        font-size: 14pt;
+                        font-size: 9pt;
                         font-weight: 600;
                         color: #1f2937;
                     }
                     .materias-grid {
                         display: grid;
-                        grid-template-columns: repeat(3, 1fr);
-                        gap: 1rem;
-                        padding: 1rem;
+                        grid-template-columns: repeat(2, 1fr);
+                        gap: 0.2cm;
+                        padding: 0.2cm;
                     }
                     .materia-card {
-                        border: 2px solid;
-                        border-radius: 6px;
-                        padding: 0.75rem;
-                        transition: all 0.2s;
+                        border: 1px solid;
+                        border-radius: 3px;
+                        padding: 0.2cm;
                     }
                     .materia-sigla {
-                        font-size: 9pt;
+                        font-size: 7pt;
                         font-weight: 700;
                         color: #6b7280;
-                        margin-bottom: 0.25rem;
                     }
                     .materia-nombre {
-                        font-size: 10pt;
+                        font-size: 7.5pt;
                         font-weight: 600;
                         color: #1f2937;
-                        margin-bottom: 0.5rem;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
                     }
                     .materia-estado {
-                        font-size: 8pt;
+                        font-size: 6pt;
                         font-weight: 700;
-                        padding: 2px 8px;
-                        border-radius: 4px;
+                        padding: 1px 4px;
+                        border-radius: 2px;
                         display: inline-block;
+                        margin-top: 1px;
                     }
                     .materia-grupo {
-                        font-size: 8pt;
+                        font-size: 6pt;
                         color: #b91c1c;
                         font-weight: 700;
-                        margin-top: 0.5rem;
+                        margin-top: 1px;
                     }
                     .leyenda {
                         display: flex;
-                        gap: 2rem;
+                        gap: 0.5cm;
                         justify-content: center;
-                        margin: 2rem 0;
-                        padding: 1rem;
-                        background: white;
-                        border: 1px solid #e5e7eb;
-                        border-radius: 8px;
+                        margin-top: 0.5cm;
+                        padding: 0.2cm;
+                        background: #f3f4f6;
+                        border: 1px solid #d1d5db;
+                        border-radius: 4px;
+                        font-size: 7pt;
                     }
                     .leyenda-item {
                         display: flex;
                         align-items: center;
-                        gap: 0.5rem;
+                        gap: 0.1cm;
                     }
                     .leyenda-color {
-                        width: 16px;
-                        height: 16px;
-                        border: 2px solid;
-                        border-radius: 4px;
+                        width: 10px;
+                        height: 10px;
+                        border: 1px solid;
+                        border-radius: 2px;
                     }
                     .footer {
-                        margin-top: 2rem;
+                        margin-top: 0.5cm;
                         text-align: center;
-                        font-size: 9pt;
+                        font-size: 6pt;
                         color: #9ca3af;
                     }
-                    @page { size: A4; margin: 2cm; }
-                    @media print {
-                        body { background: white; padding: 0; }
-                        .info-grid { box-shadow: none; }
+                    @page { 
+                        size: Letter; 
+                        margin: 1cm;
                     }
                 </style>
             </head>
             <body>
                 <div class="header">
-                    <h1>FACULTAD DE INGENIERÍA EN CIENCIAS DE LA COMPUTACIÓN Y TELECOMUNICACIONES</h1>
+                    <h1>FICCT - U.A.G.R.M.</h1>
                     <h2>${carreraInfo.nombre}</h2>
                     <p>MALLA CURRICULAR • ${datos.gestion}</p>
                 </div>
@@ -331,7 +367,7 @@ export default function DescargaPage() {
                 <div class="info-grid">
                     <div class="info-item">
                         <div class="info-label">ESTUDIANTE</div>
-                        <div class="info-value">${datos.nombre}</div>
+                        <div class="info-value">${datos.nombre.split(' ')[0]} ${datos.nombre.split(' ')[1] || ''}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">REGISTRO</div>
@@ -342,13 +378,13 @@ export default function DescargaPage() {
                         <div class="info-value">${datos.ppa}</div>
                     </div>
                     <div class="info-item">
-                        <div class="info-label">CASOS ESPECIALES</div>
+                        <div class="info-label">CASOS</div>
                         <div class="info-value">${materiasCaso.length}</div>
                     </div>
                 </div>
 
                 <div class="semestres-container">
-                    ${[...semestres].reverse().map(sem => {
+                    ${semestres.map(sem => {
             const materiasHTML = sem.materias.map((mat: Materia) => {
                 const estado = estadoMaterias[mat.sigla] || "pendiente"
                 const bgColor = getEstadoColor(estado)
@@ -359,9 +395,9 @@ export default function DescargaPage() {
                 return `
                                 <div class="materia-card" style="background-color: ${bgColor}; border-color: ${borderColor};">
                                     <div class="materia-sigla">${mat.sigla}</div>
-                                    <div class="materia-nombre">${mat.nombre}</div>
+                                    <div class="materia-nombre" title="${mat.nombre}">${mat.nombre.substring(0, 25)}${mat.nombre.length > 25 ? '...' : ''}</div>
                                     <span class="materia-estado" style="background-color: ${borderColor}20; color: ${borderColor};">${estadoTexto}</span>
-                                    ${estado === "caso" && grupo ? `<div class="materia-grupo">Grupo: ${grupo}</div>` : ''}
+                                    ${estado === "caso" && grupo ? `<div class="materia-grupo">G:${grupo}</div>` : ''}
                                 </div>
                             `
             }).join('')
@@ -371,9 +407,9 @@ export default function DescargaPage() {
                                 <div class="semestre-header">
                                     <span class="semestre-numero">${sem.semestre}</span>
                                     <span class="semestre-titulo">
-                                        ${sem.semestre === 1 ? "PRIMER SEMESTRE" :
-                    sem.semestre === 9 ? "NOVENO SEMESTRE" :
-                        `${sem.semestre}° SEMESTRE`}
+                                        ${sem.semestre === 1 ? "1° SEM" :
+                    sem.semestre === 9 ? "9° SEM" :
+                        `${sem.semestre}° SEM`}
                                     </span>
                                 </div>
                                 <div class="materias-grid">
@@ -404,7 +440,7 @@ export default function DescargaPage() {
                 </div>
 
                 <div class="footer">
-                    Documento generado el ${fechaLarga} • Sistema de Solicitud de Casos Especiales FICCT
+                    Generado: ${fechaLarga}
                 </div>
             </body>
             </html>
@@ -529,63 +565,61 @@ export default function DescargaPage() {
                 </div>
 
                 <p className="text-center text-gray-400 text-xs">
-                    Al hacer clic en los botones, se abrirá una ventana para imprimir o guardar como PDF.
+                    Los documentos están optimizados para imprimir en una sola hoja tamaño carta.
                 </p>
             </div>
 
-            {/* Elemento oculto con el contenido de la carta para imprimir */}
+            {/* Elemento oculto con el contenido de la carta */}
             <div id="carta-print-content" className="hidden">
-                <p style={{ textAlign: "right", marginBottom: "2em", color: "#555" }}>
+                <p style={{ textAlign: "right", marginBottom: "0.8em" }}>
                     Santa Cruz de la Sierra, {fechaLarga}
                 </p>
 
-                <p style={{ fontWeight: "bold" }}>Señor</p>
-                <p>{carreraInfo.director}</p>
-                <p style={{ fontWeight: "600" }}>DIRECTOR DE CARRERA – {carreraInfo.nombre}</p>
-                <p>F.I.C.C.T. - U.A.G.R.M.</p>
-                <p style={{ marginBottom: "2em" }}>Presente:</p>
+                <p style={{ fontWeight: "bold", marginBottom: "0.2em" }}>Señor</p>
+                <p style={{ marginBottom: "0.2em" }}>{carreraInfo.director}</p>
+                <p style={{ fontWeight: "600", marginBottom: "0.2em" }}>DIRECTOR DE CARRERA – {carreraInfo.nombre}</p>
+                <p style={{ marginBottom: "0.2em" }}>F.I.C.C.T. - U.A.G.R.M.</p>
+                <p style={{ marginBottom: "1.2em" }}>Presente:</p>
 
-                <p style={{ textAlign: "center", fontWeight: "bold", textDecoration: "underline", letterSpacing: "0.05em", marginBottom: "2em" }}>
+                <p style={{ textAlign: "center", fontWeight: "bold", textDecoration: "underline", marginBottom: "1.2em" }}>
                     Ref.: SOLICITUD DE CASO ESPECIAL
                 </p>
 
-                <p style={{ marginBottom: "1em" }}>Distinguido Director:</p>
+                <p style={{ marginBottom: "0.8em" }}>Distinguido Director:</p>
 
-                <p style={{ textAlign: "justify", marginBottom: "1em" }}>
+                <p style={{ textAlign: "justify", marginBottom: "0.8em" }}>
                     Mediante la presente, tengo a bien dirigirme a su autoridad para solicitar mi adición
                     de materias a través de caso especial. Necesito adicionar como caso especial un total de{" "}
                     <strong>{materiasCaso.length} materia{materiasCaso.length !== 1 ? "s" : ""}</strong>{" "}
                     para la presente gestión <strong>{datos.gestion}</strong>.
                 </p>
 
-                <p style={{ textAlign: "justify", marginBottom: "1em" }}>
+                <p style={{ textAlign: "justify", marginBottom: "0.8em" }}>
                     El motivo de mi solicitud se fundamenta en la necesidad de nivelación académica. Al
-                    encontrarme cursando el <strong>cuarto semestre</strong> de la carrera de {carreraInfo.nombre},
+                    encontrarme cursando el cuarto semestre de la carrera de {carreraInfo.nombre},
                     busco optimizar mi avance curricular para completar las materias del plan de estudios
-                    en el menor tiempo posible. Mi objetivo es regularizar mi situación académica y evitar
-                    el desfase en los niveles superiores, aprovechando mi rendimiento actual para adelantar
-                    asignaturas que son requisitos críticos en la malla.
+                    en el menor tiempo posible.
                 </p>
 
-                <p style={{ marginBottom: "1em" }}>
+                <p style={{ marginBottom: "0.8em" }}>
                     Para tal efecto, detallo a continuación las materias que solicito sean adicionadas:
                 </p>
 
-                <p style={{ fontWeight: "bold", marginBottom: "1.5em" }}>
+                <p style={{ fontWeight: "bold", marginBottom: "0.8em" }}>
                     TENGO UN PPA: <span style={{ textDecoration: "underline" }}>{datos.ppa}</span>
                 </p>
 
-                <p style={{ marginBottom: "0.75em" }}>
+                <p style={{ marginBottom: "0.4em" }}>
                     Materias a inscribir en el semestre <strong>{datos.gestion}</strong> por caso especial:
                 </p>
 
-                <table>
+                <table style={{ marginBottom: "1.5em" }}>
                     <thead>
                         <tr>
-                            <th>N°</th>
-                            <th>NOMBRE DE MATERIA</th>
-                            <th>SIGLA</th>
-                            <th>GRUPO</th>
+                            <th style={{ width: "10%" }}>N°</th>
+                            <th style={{ width: "55%" }}>NOMBRE DE MATERIA</th>
+                            <th style={{ width: "15%" }}>SIGLA</th>
+                            <th style={{ width: "20%" }}>GRUPO</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -600,15 +634,15 @@ export default function DescargaPage() {
                     </tbody>
                 </table>
 
-                <p style={{ marginBottom: "5em" }}>
+                <p style={{ marginBottom: "2em" }}>
                     Sin otro particular, me despido con un saludo a usted atentamente:
                 </p>
 
-                <div className="firma">
-                    <p><strong>Univ.:</strong> {datos.nombre}</p>
-                    <p><strong>Reg.:</strong> {datos.registro}</p>
-                    <p><strong>C.I.:</strong> {datos.ci}</p>
-                    <p><strong>Cel.:</strong> {datos.celular || "[No especificado]"}</p>
+                <div style={{ marginTop: "1.5em" }}>
+                    <p style={{ margin: "0.1em 0" }}><strong>Univ.:</strong> {datos.nombre}</p>
+                    <p style={{ margin: "0.1em 0" }}><strong>Reg.:</strong> {datos.registro}</p>
+                    <p style={{ margin: "0.1em 0" }}><strong>C.I.:</strong> {datos.ci}</p>
+                    <p style={{ margin: "0.1em 0" }}><strong>Cel.:</strong> {datos.celular || "—"}</p>
                 </div>
             </div>
         </div>
