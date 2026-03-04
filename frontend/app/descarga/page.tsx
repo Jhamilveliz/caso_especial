@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useCasoEspecial } from "@/lib/store"
 import { mallas, Materia, Semestre } from "@/data/mallas"
@@ -18,42 +18,163 @@ const CARRERA_INFO: Record<string, { director: string; nombre: string }> = {
 
 const PASOS = ["Datos", "Malla", "Carta", "Descarga"]
 
-/* =========================
-   HELPER: obtener semestres
-========================= */
-
-function getSemestres(carreraId: string): { semestres: Semestre[] } {
+function getSemestres(carreraId: string): Semestre[] {
     const mapaCarrera: Record<string, string> = {
         "Informática": "informatica_187_3",
         "Sistemas": "sistemas_187_4",
         "Redes": "redes_187_5",
         "Robótica": "robotica_323_0",
     }
-
     const key = mapaCarrera[carreraId]
-    if (!key) return { semestres: [] }
-
+    if (!key) return []
     const carrera = (mallas as any)[key]
-    if (!carrera) return { semestres: [] }
+    return carrera?.troncal ?? []
+}
 
-    const troncal: Semestre[] = carrera.troncal ?? []
-    return { semestres: troncal }
+/* ── Colores estado ── */
+const ESTADO_BG: Record<string, string> = { aprobada: "#fde047", inscrita: "#86efac", caso: "#fca5a5", pendiente: "#ffffff" }
+const ESTADO_BORDER: Record<string, string> = { aprobada: "#ca8a04", inscrita: "#16a34a", caso: "#dc2626", pendiente: "#d1d5db" }
+const ESTADO_TEXT: Record<string, string> = { aprobada: "#713f12", inscrita: "#14532d", caso: "#7f1d1d", pendiente: "#6b7280" }
+
+/* ── Genera HTML de la carta (para PDF) ── */
+function generarHTMLCarta(datos: any, carreraInfo: any, materiasCaso: any[], fechaLarga: string): string {
+    const filasTabla = materiasCaso.map((m, i) => `
+        <tr>
+            <td style="border:1px solid #333;padding:4px 8px;text-align:center;">${i + 1}</td>
+            <td style="border:1px solid #333;padding:4px 8px;">${m.nombre}</td>
+            <td style="border:1px solid #333;padding:4px 8px;font-family:monospace;">${m.sigla}</td>
+            <td style="border:1px solid #333;padding:4px 8px;font-weight:bold;">${m.grupo}</td>
+        </tr>
+    `).join("")
+
+    return `
+    <div style="font-family:Georgia,'Times New Roman',serif;font-size:11pt;line-height:1.6;color:#000;padding:0;max-width:700px;">
+        <p style="text-align:right;margin-bottom:1.2em;">Santa Cruz de la Sierra, ${fechaLarga}</p>
+        <p style="font-weight:bold;margin:0;">Señor</p>
+        <p style="margin:0.1em 0;">${carreraInfo.director}</p>
+        <p style="font-weight:600;margin:0.1em 0;">DIRECTOR DE CARRERA – ${carreraInfo.nombre}</p>
+        <p style="margin:0.1em 0;">F.I.C.C.T. - U.A.G.R.M.</p>
+        <p style="margin-bottom:1.5em;">Presente:</p>
+        <p style="text-align:center;font-weight:bold;text-decoration:underline;margin-bottom:1.5em;">Ref.: SOLICITUD DE CASO ESPECIAL</p>
+        <p style="margin-bottom:0.8em;">Distinguido Director:</p>
+        <p style="text-align:justify;margin-bottom:0.8em;">
+            Mediante la presente, tengo a bien dirigirme a su autoridad para solicitar mi adición de materias
+            a través de caso especial. Necesito adicionar como caso especial un total de
+            <strong>${materiasCaso.length} materia${materiasCaso.length !== 1 ? "s" : ""}</strong>
+            para la presente gestión <strong>${datos.gestion}</strong>.
+        </p>
+        <p style="text-align:justify;margin-bottom:0.8em;">
+            El motivo de mi solicitud se fundamenta en la necesidad de nivelación académica en la carrera de
+            ${carreraInfo.nombre}, buscando optimizar mi avance curricular para completar las materias del
+            plan de estudios en el menor tiempo posible.
+        </p>
+        <p style="margin-bottom:0.4em;">Para tal efecto, detallo las materias que solicito sean adicionadas:</p>
+        <p style="font-weight:bold;margin-bottom:0.8em;">TENGO UN PPA: <span style="text-decoration:underline;">${datos.ppa}</span></p>
+        <p style="margin-bottom:0.4em;">Materias a inscribir en el semestre <strong>${datos.gestion}</strong> por caso especial:</p>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:1.5em;font-size:10pt;">
+            <thead>
+                <tr style="background:#f0f0f0;">
+                    <th style="border:1px solid #333;padding:4px 8px;width:8%;">N°</th>
+                    <th style="border:1px solid #333;padding:4px 8px;width:52%;">NOMBRE DE MATERIA</th>
+                    <th style="border:1px solid #333;padding:4px 8px;width:18%;">SIGLA</th>
+                    <th style="border:1px solid #333;padding:4px 8px;width:22%;">GRUPO</th>
+                </tr>
+            </thead>
+            <tbody>${filasTabla}</tbody>
+        </table>
+        <p style="margin-bottom:2.5em;">Sin otro particular, me despido con un saludo a usted atentamente:</p>
+        <div style="margin-top:1em;font-size:10pt;">
+            <p style="margin:0.2em 0;"><strong>Univ.:</strong> ${datos.nombre}</p>
+            <p style="margin:0.2em 0;"><strong>Reg.:</strong> ${datos.registro}</p>
+            <p style="margin:0.2em 0;"><strong>C.I.:</strong> ${datos.ci}</p>
+            <p style="margin:0.2em 0;"><strong>Cel.:</strong> ${datos.celular || "—"}</p>
+        </div>
+    </div>
+    `
+}
+
+/* ── Genera HTML de la malla (para PDF) ── */
+function generarHTMLMalla(datos: any, carreraInfo: any, semestres: Semestre[], estadoMaterias: any, gruposMaterias: any, fechaLarga: string): string {
+    const semestresOrdenados = [...semestres].sort((a, b) => b.semestre - a.semestre)
+    const SEM_LABEL: Record<number, string> = { 9: "9n", 8: "8v", 7: "7m", 6: "6to", 5: "5to", 4: "4to", 3: "3ro", 2: "2d", 1: "1ro" }
+    const maxMaterias = Math.max(...semestres.map(s => s.materias.length), 1)
+
+    const filas = semestresOrdenados.map((sem, semIdx) => {
+        const celdas = Array.from({ length: maxMaterias }).map((_, idx) => {
+            const mat: Materia | undefined = sem.materias[idx]
+            if (!mat) return `<td style="border:1px solid #e5e7eb;padding:4px;background:#fafafa;"></td>`
+            const estado = estadoMaterias[mat.sigla] || "pendiente"
+            const bg = ESTADO_BG[estado]
+            const border = ESTADO_BORDER[estado]
+            const text = ESTADO_TEXT[estado]
+            const grupo = estado === "caso" && gruposMaterias[mat.sigla] ? `<div style="font-size:6.5pt;color:#dc2626;font-weight:700;margin-top:2px;">G: ${gruposMaterias[mat.sigla]}</div>` : ""
+            return `
+                <td style="border:1px solid #e5e7eb;padding:4px;vertical-align:top;">
+                    <div style="background:${bg};border:1px solid ${border};border-radius:4px;padding:4px 5px;min-height:42px;">
+                        <div style="font-weight:800;font-size:8pt;color:${text};font-family:'Courier New',monospace;">${mat.sigla}</div>
+                        <div style="font-size:6.5pt;color:${text};opacity:0.8;line-height:1.25;margin-top:2px;">${mat.nombre}</div>
+                        ${grupo}
+                    </div>
+                </td>`
+        }).join("")
+
+        return `
+            <tr>
+                <td style="width:38px;background:${semIdx % 2 === 0 ? "#eff6ff" : "#f0f4ff"};border:1px solid #e5e7eb;text-align:center;vertical-align:middle;padding:4px 2px;">
+                    <div style="font-weight:900;font-size:11pt;color:#1d4ed8;">${SEM_LABEL[sem.semestre] ?? sem.semestre}</div>
+                    <div style="font-size:6pt;color:#93c5fd;font-weight:600;text-transform:uppercase;">Sem</div>
+                </td>
+                ${celdas}
+            </tr>`
+    }).join("")
+
+    return `
+    <div style="font-family:sans-serif;font-size:9pt;color:#111827;padding:0;">
+        <div style="text-align:center;margin-bottom:10px;">
+            <div style="font-size:8pt;font-weight:700;color:#1d4ed8;letter-spacing:1px;">FICCT — U.A.G.R.M.</div>
+            <div style="font-size:13pt;font-weight:900;color:#111827;">MALLA CURRICULAR</div>
+            <div style="font-size:11pt;font-weight:700;color:#dc2626;">${carreraInfo.nombre}</div>
+            <div style="font-size:8pt;color:#6b7280;margin-top:2px;">
+                ${datos.nombre} &nbsp;·&nbsp; Reg. ${datos.registro} &nbsp;·&nbsp; PPA ${datos.ppa} &nbsp;·&nbsp; Gestión ${datos.gestion}
+            </div>
+        </div>
+
+        <div style="display:flex;justify-content:center;margin-bottom:6px;">
+            <div style="background:#fff;border:1px solid #d1d5db;border-radius:4px;padding:3px 14px;font-size:8pt;font-weight:700;color:#374151;">
+                GRL001 — Modal. de Titulación
+            </div>
+        </div>
+
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+            <tbody>${filas}</tbody>
+        </table>
+
+        <div style="display:flex;justify-content:center;gap:16px;margin-top:8px;flex-wrap:wrap;font-size:7.5pt;">
+            ${Object.entries({ aprobada: "Aprobada", inscrita: "Inscrita", caso: "Caso Especial", pendiente: "Pendiente" }).map(([k, v]) =>
+        `<div style="display:flex;align-items:center;gap:4px;">
+                    <div style="width:11px;height:11px;background:${ESTADO_BG[k]};border:1px solid ${ESTADO_BORDER[k]};border-radius:2px;"></div>
+                    <span style="color:#374151;">${v}</span>
+                </div>`
+    ).join("")}
+        </div>
+        <div style="text-align:center;font-size:7pt;color:#9ca3af;margin-top:6px;">Generado: ${fechaLarga}</div>
+    </div>
+    `
 }
 
 /* =========================
-   COMPONENTE
+   COMPONENTE PRINCIPAL
 ========================= */
 
 export default function DescargaPage() {
     const router = useRouter()
     const { datos, estadoMaterias, gruposMaterias, resetAll } = useCasoEspecial()
 
-    // Proteger ruta
     useEffect(() => {
         if (!datos.nombre.trim()) router.replace("/datos")
     }, [datos.nombre, router])
 
-    const { semestres } = getSemestres(datos.carrera)
+    const semestres = getSemestres(datos.carrera)
 
     const materiasCaso = Object.entries(estadoMaterias)
         .filter(([, e]) => e === "caso")
@@ -61,393 +182,81 @@ export default function DescargaPage() {
             let nombreMateria = sigla
             for (const sem of semestres) {
                 const mat = sem.materias.find((m: Materia) => m.sigla === sigla)
-                if (mat) {
-                    nombreMateria = mat.nombre
-                    break
-                }
+                if (mat) { nombreMateria = mat.nombre; break }
             }
-            return {
-                sigla,
-                nombre: nombreMateria,
-                grupo: gruposMaterias[sigla] ?? "—"
-            }
+            return { sigla, nombre: nombreMateria, grupo: gruposMaterias[sigla] ?? "—" }
         })
 
-    const carreraInfo = CARRERA_INFO[datos.carrera] ?? {
-        director: "Director de Carrera",
-        nombre: datos.carrera.toUpperCase()
-    }
+    const carreraInfo = CARRERA_INFO[datos.carrera] ?? { director: "Director de Carrera", nombre: datos.carrera.toUpperCase() }
 
     const hoy = new Date()
-    const fechaLarga = hoy.toLocaleDateString("es-BO", {
-        day: "numeric",
-        month: "long",
-        year: "numeric"
-    })
+    const fechaLarga = hoy.toLocaleDateString("es-BO", { day: "numeric", month: "long", year: "numeric" })
 
-    // Función para imprimir la carta
-    const imprimirCarta = () => {
-        const contenido = document.getElementById("carta-print-content")
-        if (!contenido) return
+    /* ── Descarga PDF usando jsPDF + html2canvas ── */
+    const descargarPDF = async (htmlContent: string, nombreArchivo: string, landscape = false) => {
+        // Importar dinámicamente para evitar SSR issues
+        const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+            import("jspdf"),
+            import("html2canvas"),
+        ])
 
-        const ventana = window.open("", "_blank", "width=800,height=1000")
-        if (!ventana) return
+        // Crear elemento temporal
+        const container = document.createElement("div")
+        container.style.position = "fixed"
+        container.style.left = "-9999px"
+        container.style.top = "0"
+        container.style.width = landscape ? "1056px" : "816px" // Letter: 8.5in × 11in @ 96dpi
+        container.style.background = "#ffffff"
+        container.style.padding = landscape ? "28px 32px" : "56px 72px"
+        container.style.boxSizing = "border-box"
+        container.innerHTML = htmlContent
+        document.body.appendChild(container)
 
-        ventana.document.write(`
-            <!DOCTYPE html>
-            <html lang="es">
-            <head>
-                <meta charset="UTF-8" />
-                <title>Caso Especial — ${datos.nombre}</title>
-                <style>
-                    * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body { 
-                        font-family: Georgia, 'Times New Roman', serif; 
-                        font-size: 11pt; 
-                        line-height: 1.4; 
-                        padding: 1.5cm 2cm; 
-                        color: #000;
-                        max-height: 29.7cm;
-                        overflow: hidden;
-                    }
-                    table { 
-                        width: 100%; 
-                        border-collapse: collapse; 
-                        margin: 0.8em 0;
-                        font-size: 10pt;
-                    }
-                    th, td { 
-                        border: 1px solid #333; 
-                        padding: 4px 8px; 
-                        text-align: left; 
-                    }
-                    th { 
-                        background: #f0f0f0; 
-                        font-weight: bold; 
-                        font-size: 9pt;
-                    }
-                    .text-right { text-align: right; }
-                    .text-center { text-align: center; }
-                    .text-justify { text-align: justify; }
-                    .bold { font-weight: bold; }
-                    .underline { text-decoration: underline; }
-                    .firma { 
-                        margin-top: 40px; 
-                        font-size: 10pt;
-                    }
-                    .firma p {
-                        margin: 2px 0;
-                    }
-                    .mb-1 { margin-bottom: 0.5em; }
-                    .mb-2 { margin-bottom: 1em; }
-                    .mb-3 { margin-bottom: 1.5em; }
-                    @page { 
-                        size: Letter; 
-                        margin: 1.5cm 2cm;
-                    }
-                </style>
-            </head>
-            <body>${contenido.innerHTML}</body>
-            </html>
-        `)
-        ventana.document.close()
-        ventana.focus()
-        setTimeout(() => { ventana.print() }, 400)
+        try {
+            const canvas = await html2canvas(container, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: "#ffffff",
+                logging: false,
+            })
+
+            const imgData = canvas.toDataURL("image/png")
+            const pdf = new jsPDF({
+                orientation: landscape ? "landscape" : "portrait",
+                unit: "pt",
+                format: "letter",
+            })
+
+            const pageW = pdf.internal.pageSize.getWidth()
+            const pageH = pdf.internal.pageSize.getHeight()
+            const ratio = canvas.height / canvas.width
+            const imgW = pageW
+            const imgH = pageW * ratio
+
+            if (imgH <= pageH) {
+                pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH)
+            } else {
+                // Si no entra, escala para que entre en 1 página
+                const scaledH = pageH
+                const scaledW = pageH / ratio
+                const xOffset = (pageW - scaledW) / 2
+                pdf.addImage(imgData, "PNG", xOffset, 0, scaledW, scaledH)
+            }
+
+            pdf.save(nombreArchivo)
+        } finally {
+            document.body.removeChild(container)
+        }
     }
 
-    // Función para imprimir la malla
-    const imprimirMalla = () => {
-        const ventana = window.open("", "_blank", "width=1200,height=800")
-        if (!ventana) return
+    const handleDescargarCarta = async () => {
+        const html = generarHTMLCarta(datos, carreraInfo, materiasCaso, fechaLarga)
+        await descargarPDF(html, `carta-caso-especial-${datos.registro || "solicitud"}.pdf`, false)
+    }
 
-        // Función para obtener el color según el estado
-        const getEstadoColor = (estado: string) => {
-            switch (estado) {
-                case "aprobada": return "#fef9c3";
-                case "inscrita": return "#dcfce7";
-                case "caso": return "#fee2e2";
-                default: return "#f9fafb";
-            }
-        }
-
-        const getEstadoBorder = (estado: string) => {
-            switch (estado) {
-                case "aprobada": return "#facc15";
-                case "inscrita": return "#22c55e";
-                case "caso": return "#ef4444";
-                default: return "#d1d5db";
-            }
-        }
-
-        const getEstadoTexto = (estado: string) => {
-            switch (estado) {
-                case "aprobada": return "APROB";
-                case "inscrita": return "INSCR";
-                case "caso": return "CASO";
-                default: return "PEND";
-            }
-        }
-
-        ventana.document.write(`
-            <!DOCTYPE html>
-            <html lang="es">
-            <head>
-                <meta charset="UTF-8" />
-                <title>Malla Curricular — ${datos.carrera}</title>
-                <style>
-                    * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body { 
-                        font-family: 'Arial', Helvetica, sans-serif; 
-                        font-size: 9pt; 
-                        line-height: 1.3; 
-                        padding: 1cm;
-                        background: white;
-                        color: #111827;
-                        max-height: 27.9cm;
-                        overflow: hidden;
-                    }
-                    .header {
-                        margin-bottom: 0.8cm;
-                        text-align: center;
-                    }
-                    .header h1 {
-                        font-size: 14pt;
-                        font-weight: 800;
-                        color: #1e3a8a;
-                        margin-bottom: 0.2cm;
-                    }
-                    .header h2 {
-                        font-size: 12pt;
-                        font-weight: 700;
-                        color: #b91c1c;
-                        margin-bottom: 0.2cm;
-                    }
-                    .header p {
-                        font-size: 10pt;
-                        color: #4b5563;
-                    }
-                    .info-grid {
-                        display: grid;
-                        grid-template-columns: repeat(4, 1fr);
-                        gap: 0.3cm;
-                        margin-bottom: 0.8cm;
-                        padding: 0.3cm;
-                        background: #f3f4f6;
-                        border: 1px solid #d1d5db;
-                        border-radius: 4px;
-                    }
-                    .info-item {
-                        text-align: center;
-                    }
-                    .info-label {
-                        font-size: 7pt;
-                        text-transform: uppercase;
-                        color: #6b7280;
-                    }
-                    .info-value {
-                        font-size: 10pt;
-                        font-weight: 700;
-                        color: #1f2937;
-                    }
-                    .semestres-container {
-                        display: grid;
-                        grid-template-columns: repeat(2, 1fr);
-                        gap: 0.4cm;
-                    }
-                    .semestre {
-                        background: white;
-                        border: 1px solid #d1d5db;
-                        border-radius: 4px;
-                        overflow: hidden;
-                        break-inside: avoid;
-                    }
-                    .semestre-header {
-                        background: #e5e7eb;
-                        padding: 0.2cm 0.3cm;
-                        display: flex;
-                        align-items: center;
-                        gap: 0.2cm;
-                    }
-                    .semestre-numero {
-                        width: 20px;
-                        height: 20px;
-                        background: #1e3a8a;
-                        color: white;
-                        font-weight: 700;
-                        font-size: 9pt;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        border-radius: 50%;
-                    }
-                    .semestre-titulo {
-                        font-size: 9pt;
-                        font-weight: 600;
-                        color: #1f2937;
-                    }
-                    .materias-grid {
-                        display: grid;
-                        grid-template-columns: repeat(2, 1fr);
-                        gap: 0.2cm;
-                        padding: 0.2cm;
-                    }
-                    .materia-card {
-                        border: 1px solid;
-                        border-radius: 3px;
-                        padding: 0.2cm;
-                    }
-                    .materia-sigla {
-                        font-size: 7pt;
-                        font-weight: 700;
-                        color: #6b7280;
-                    }
-                    .materia-nombre {
-                        font-size: 7.5pt;
-                        font-weight: 600;
-                        color: #1f2937;
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                    }
-                    .materia-estado {
-                        font-size: 6pt;
-                        font-weight: 700;
-                        padding: 1px 4px;
-                        border-radius: 2px;
-                        display: inline-block;
-                        margin-top: 1px;
-                    }
-                    .materia-grupo {
-                        font-size: 6pt;
-                        color: #b91c1c;
-                        font-weight: 700;
-                        margin-top: 1px;
-                    }
-                    .leyenda {
-                        display: flex;
-                        gap: 0.5cm;
-                        justify-content: center;
-                        margin-top: 0.5cm;
-                        padding: 0.2cm;
-                        background: #f3f4f6;
-                        border: 1px solid #d1d5db;
-                        border-radius: 4px;
-                        font-size: 7pt;
-                    }
-                    .leyenda-item {
-                        display: flex;
-                        align-items: center;
-                        gap: 0.1cm;
-                    }
-                    .leyenda-color {
-                        width: 10px;
-                        height: 10px;
-                        border: 1px solid;
-                        border-radius: 2px;
-                    }
-                    .footer {
-                        margin-top: 0.5cm;
-                        text-align: center;
-                        font-size: 6pt;
-                        color: #9ca3af;
-                    }
-                    @page { 
-                        size: Letter; 
-                        margin: 1cm;
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h1>FICCT - U.A.G.R.M.</h1>
-                    <h2>${carreraInfo.nombre}</h2>
-                    <p>MALLA CURRICULAR • ${datos.gestion}</p>
-                </div>
-
-                <div class="info-grid">
-                    <div class="info-item">
-                        <div class="info-label">ESTUDIANTE</div>
-                        <div class="info-value">${datos.nombre.split(' ')[0]} ${datos.nombre.split(' ')[1] || ''}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">REGISTRO</div>
-                        <div class="info-value">${datos.registro}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">PPA</div>
-                        <div class="info-value">${datos.ppa}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">CASOS</div>
-                        <div class="info-value">${materiasCaso.length}</div>
-                    </div>
-                </div>
-
-                <div class="semestres-container">
-                    ${semestres.map(sem => {
-            const materiasHTML = sem.materias.map((mat: Materia) => {
-                const estado = estadoMaterias[mat.sigla] || "pendiente"
-                const bgColor = getEstadoColor(estado)
-                const borderColor = getEstadoBorder(estado)
-                const estadoTexto = getEstadoTexto(estado)
-                const grupo = gruposMaterias[mat.sigla]
-
-                return `
-                                <div class="materia-card" style="background-color: ${bgColor}; border-color: ${borderColor};">
-                                    <div class="materia-sigla">${mat.sigla}</div>
-                                    <div class="materia-nombre" title="${mat.nombre}">${mat.nombre.substring(0, 25)}${mat.nombre.length > 25 ? '...' : ''}</div>
-                                    <span class="materia-estado" style="background-color: ${borderColor}20; color: ${borderColor};">${estadoTexto}</span>
-                                    ${estado === "caso" && grupo ? `<div class="materia-grupo">G:${grupo}</div>` : ''}
-                                </div>
-                            `
-            }).join('')
-
-            return `
-                            <div class="semestre">
-                                <div class="semestre-header">
-                                    <span class="semestre-numero">${sem.semestre}</span>
-                                    <span class="semestre-titulo">
-                                        ${sem.semestre === 1 ? "1° SEM" :
-                    sem.semestre === 9 ? "9° SEM" :
-                        `${sem.semestre}° SEM`}
-                                    </span>
-                                </div>
-                                <div class="materias-grid">
-                                    ${materiasHTML}
-                                </div>
-                            </div>
-                        `
-        }).join('')}
-                </div>
-
-                <div class="leyenda">
-                    <div class="leyenda-item">
-                        <div class="leyenda-color" style="background: #fef9c3; border-color: #facc15;"></div>
-                        <span>Aprobada</span>
-                    </div>
-                    <div class="leyenda-item">
-                        <div class="leyenda-color" style="background: #dcfce7; border-color: #22c55e;"></div>
-                        <span>Inscrita</span>
-                    </div>
-                    <div class="leyenda-item">
-                        <div class="leyenda-color" style="background: #fee2e2; border-color: #ef4444;"></div>
-                        <span>Caso Especial</span>
-                    </div>
-                    <div class="leyenda-item">
-                        <div class="leyenda-color" style="background: #f9fafb; border-color: #d1d5db;"></div>
-                        <span>Pendiente</span>
-                    </div>
-                </div>
-
-                <div class="footer">
-                    Generado: ${fechaLarga}
-                </div>
-            </body>
-            </html>
-        `)
-        ventana.document.close()
-        ventana.focus()
-        setTimeout(() => { ventana.print() }, 400)
+    const handleDescargarMalla = async () => {
+        const html = generarHTMLMalla(datos, carreraInfo, semestres, estadoMaterias, gruposMaterias, fechaLarga)
+        await descargarPDF(html, `malla-${datos.carrera.toLowerCase()}-${datos.registro || "malla"}.pdf`, true)
     }
 
     const nuevaSolicitud = () => {
@@ -456,194 +265,190 @@ export default function DescargaPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-            <div className="max-w-3xl mx-auto">
+        <div style={{ minHeight: "100vh", background: "#f3f4f6", padding: "32px 16px", fontFamily: "sans-serif" }}>
+            <div style={{ maxWidth: 700, margin: "0 auto" }}>
 
-                {/* Header */}
-                <div className="mb-6">
-                    <div className="inline-flex items-center gap-2 bg-blue-800 text-white text-xs font-semibold px-3 py-1 rounded mb-3 tracking-widest uppercase">
+                {/* ── BADGE + TÍTULO ── */}
+                <div style={{ marginBottom: 24 }}>
+                    <div style={{
+                        display: "inline-block",
+                        background: "#1d4ed8", color: "#fff",
+                        fontSize: 11, fontWeight: 700,
+                        padding: "4px 10px", borderRadius: 6,
+                        letterSpacing: 0.5, marginBottom: 10,
+                    }}>
                         FICCT — U.A.G.R.M.
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900">
-                        Descargar{" "}
-                        <span className="text-red-700">Documentos</span>
+                    <h1 style={{ fontSize: 28, fontWeight: 800, color: "#111827", margin: "0 0 4px 0", lineHeight: 1.2 }}>
+                        Descargar <span style={{ color: "#dc2626" }}>Documentos</span>
                     </h1>
-                    <p className="text-gray-500 text-sm mt-1">
+                    <p style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>
                         Paso 4 de 4 — Descargá los documentos generados
                     </p>
                 </div>
 
-                {/* Indicador de pasos */}
-                <div className="flex gap-2 mb-7">
+                {/* ── BARRA DE PROGRESO ── */}
+                <div style={{ display: "flex", gap: 0, marginBottom: 28 }}>
                     {PASOS.map((paso, i) => (
-                        <div key={paso} className="flex-1">
-                            <div className="h-1 rounded-full mb-1 bg-red-600" />
-                            <span className="text-xs font-medium text-red-600">{paso}</span>
+                        <div key={paso} style={{ flex: 1, textAlign: "center" }}>
+                            <div style={{
+                                height: 3, borderRadius: 2,
+                                background: "#dc2626",
+                                marginBottom: 6,
+                            }} />
+                            <span style={{
+                                fontSize: 12, fontWeight: i === 3 ? 700 : 400,
+                                color: i === 3 ? "#dc2626" : "#374151",
+                            }}>
+                                {paso}
+                            </span>
                         </div>
                     ))}
                 </div>
 
-                {/* Resumen final */}
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
-                    <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Resumen de la solicitud</h2>
-                    <div className="grid grid-cols-2 gap-3 text-sm mb-4">
-                        <div>
-                            <span className="text-gray-500">Estudiante:</span>
-                            <span className="text-gray-900 font-semibold ml-2">{datos.nombre}</span>
-                        </div>
-                        <div>
-                            <span className="text-gray-500">Registro:</span>
-                            <span className="text-gray-900 font-semibold ml-2">{datos.registro}</span>
-                        </div>
-                        <div>
-                            <span className="text-gray-500">PPA:</span>
-                            <span className="text-blue-800 font-black ml-2 text-lg">{datos.ppa}</span>
-                        </div>
-                        <div>
-                            <span className="text-gray-500">Gestión:</span>
-                            <span className="text-gray-900 font-semibold ml-2">{datos.gestion}</span>
-                        </div>
-                        <div>
-                            <span className="text-gray-500">Celular:</span>
-                            <span className="text-gray-900 font-semibold ml-2">{datos.celular || "—"}</span>
-                        </div>
-                        <div>
-                            <span className="text-gray-500">CI:</span>
-                            <span className="text-gray-900 font-semibold ml-2">{datos.ci}</span>
-                        </div>
+                {/* ── RESUMEN ── */}
+                <div style={{
+                    background: "#fff", borderRadius: 12,
+                    border: "1px solid #e5e7eb",
+                    boxShadow: "0 1px 6px rgba(0,0,0,0.06)",
+                    padding: "24px", marginBottom: 16,
+                }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>
+                        Resumen de la solicitud
+                    </div>
+
+                    {/* Grid info estudiante */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 24px", marginBottom: 20 }}>
+                        {[
+                            { label: "Estudiante", value: datos.nombre },
+                            { label: "Registro", value: datos.registro },
+                            { label: "PPA", value: datos.ppa, highlight: true },
+                            { label: "Gestión", value: datos.gestion },
+                            { label: "Celular", value: datos.celular || "—" },
+                            { label: "C.I.", value: datos.ci },
+                        ].map(item => (
+                            <div key={item.label}>
+                                <div style={{ fontSize: 11, color: "#9ca3af" }}>{item.label}</div>
+                                <div style={{
+                                    fontSize: item.highlight ? 22 : 14,
+                                    fontWeight: item.highlight ? 900 : 600,
+                                    color: item.highlight ? "#1d4ed8" : "#111827",
+                                }}>
+                                    {item.value}
+                                </div>
+                            </div>
+                        ))}
                     </div>
 
                     {/* Materias caso especial */}
-                    <div className="border-t border-gray-100 pt-4">
-                        <p className="text-xs text-gray-500 uppercase tracking-widest mb-3">Materias — Caso Especial</p>
+                    <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: 16 }}>
+                        <div style={{
+                            display: "flex", alignItems: "center", gap: 8,
+                            marginBottom: 12,
+                        }}>
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#dc2626" }} />
+                            <span style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: 1 }}>
+                                Materias — Caso Especial
+                            </span>
+                        </div>
+
                         {materiasCaso.length === 0 ? (
-                            <p className="text-gray-400 text-sm">No hay materias marcadas como caso especial.</p>
+                            <p style={{ color: "#9ca3af", fontSize: 13 }}>No hay materias marcadas como caso especial.</p>
                         ) : (
-                            materiasCaso.map((m, i) => (
-                                <div key={m.sigla} className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
-                                    <span className="w-6 h-6 bg-red-700 rounded-full flex items-center justify-center text-xs font-black text-white flex-shrink-0">{i + 1}</span>
-                                    <span className="flex-1 text-gray-900 text-sm font-medium">{m.nombre}</span>
-                                    <span className="text-blue-800 font-mono text-xs font-semibold">{m.sigla}</span>
-                                    <span className="bg-gray-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded border border-gray-200">Grupo: {m.grupo}</span>
-                                </div>
-                            ))
+                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                                <thead>
+                                    <tr style={{ background: "#f9fafb" }}>
+                                        <th style={{ padding: "6px 10px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #e5e7eb" }}>N°</th>
+                                        <th style={{ padding: "6px 10px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #e5e7eb" }}>Materia</th>
+                                        <th style={{ padding: "6px 10px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #e5e7eb" }}>Sigla</th>
+                                        <th style={{ padding: "6px 10px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid #e5e7eb" }}>Grupo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {materiasCaso.map((m, i) => (
+                                        <tr key={m.sigla} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                                            <td style={{ padding: "8px 10px", color: "#6b7280" }}>{i + 1}</td>
+                                            <td style={{ padding: "8px 10px", color: "#111827", fontWeight: 500 }}>{m.nombre}</td>
+                                            <td style={{ padding: "8px 10px", color: "#1d4ed8", fontFamily: "monospace", fontWeight: 700 }}>{m.sigla}</td>
+                                            <td style={{ padding: "8px 10px", color: "#dc2626", fontWeight: 700 }}>{m.grupo}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         )}
                     </div>
                 </div>
 
-                {/* BOTONES DE DESCARGA */}
-                <div className="flex flex-col gap-3 mb-8">
+                {/* ── BOTONES DE DESCARGA ── */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
                     <button
-                        onClick={imprimirCarta}
-                        className="w-full py-4 rounded-md bg-blue-800 hover:bg-blue-900 active:scale-[0.99] text-white font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-sm"
+                        onClick={handleDescargarCarta}
+                        style={{
+                            width: "100%", padding: "16px 0",
+                            borderRadius: 8, background: "#1d4ed8",
+                            border: "none", color: "#fff",
+                            fontWeight: 700, fontSize: 15,
+                            cursor: "pointer", fontFamily: "sans-serif",
+                            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "#1e40af")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "#1d4ed8")}
                     >
-                        <span className="text-xl">📄</span>
-                        Descargar Carta de Solicitud
+                        <span style={{ fontSize: 20 }}>📄</span>
+                        Descargar Carta de Solicitud (PDF)
                     </button>
 
                     <button
-                        onClick={imprimirMalla}
-                        className="w-full py-4 rounded-md bg-green-700 hover:bg-green-800 active:scale-[0.99] text-white font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-sm"
+                        onClick={handleDescargarMalla}
+                        style={{
+                            width: "100%", padding: "16px 0",
+                            borderRadius: 8, background: "#15803d",
+                            border: "none", color: "#fff",
+                            fontWeight: 700, fontSize: 15,
+                            cursor: "pointer", fontFamily: "sans-serif",
+                            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "#166534")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "#15803d")}
                     >
-                        <span className="text-xl">📊</span>
-                        Descargar Malla Curricular
+                        <span style={{ fontSize: 20 }}>📊</span>
+                        Descargar Malla Curricular (PDF)
                     </button>
 
                     <button
                         onClick={() => router.push("/carta")}
-                        className="w-full py-3 rounded-md bg-white hover:bg-gray-50 text-gray-600 font-semibold border border-gray-300 transition flex items-center justify-center gap-2 text-sm"
+                        style={{
+                            width: "100%", padding: "12px 0",
+                            borderRadius: 8, background: "#fff",
+                            border: "1px solid #d1d5db", color: "#374151",
+                            fontWeight: 600, fontSize: 13,
+                            cursor: "pointer", fontFamily: "sans-serif",
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "#f9fafb")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "#fff")}
                     >
                         👁 Volver a ver la carta
                     </button>
 
                     <button
                         onClick={nuevaSolicitud}
-                        className="w-full py-3 rounded-md bg-white hover:bg-gray-50 text-gray-400 hover:text-gray-600 font-semibold border border-gray-200 transition flex items-center justify-center gap-2 text-sm"
+                        style={{
+                            width: "100%", padding: "12px 0",
+                            borderRadius: 8, background: "#fff",
+                            border: "1px solid #e5e7eb", color: "#9ca3af",
+                            fontWeight: 600, fontSize: 13,
+                            cursor: "pointer", fontFamily: "sans-serif",
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.color = "#374151")}
+                        onMouseLeave={e => (e.currentTarget.style.color = "#9ca3af")}
                     >
                         🔄 Nueva Solicitud
                     </button>
                 </div>
 
-                <p className="text-center text-gray-400 text-xs">
-                    Los documentos están optimizados para imprimir en una sola hoja tamaño carta.
+                <p style={{ textAlign: "center", fontSize: 12, color: "#9ca3af" }}>
+                    🔒 Los documentos se generan en tu navegador — nada se envía a ningún servidor.
                 </p>
-            </div>
-
-            {/* Elemento oculto con el contenido de la carta */}
-            <div id="carta-print-content" className="hidden">
-                <p style={{ textAlign: "right", marginBottom: "0.8em" }}>
-                    Santa Cruz de la Sierra, {fechaLarga}
-                </p>
-
-                <p style={{ fontWeight: "bold", marginBottom: "0.2em" }}>Señor</p>
-                <p style={{ marginBottom: "0.2em" }}>{carreraInfo.director}</p>
-                <p style={{ fontWeight: "600", marginBottom: "0.2em" }}>DIRECTOR DE CARRERA – {carreraInfo.nombre}</p>
-                <p style={{ marginBottom: "0.2em" }}>F.I.C.C.T. - U.A.G.R.M.</p>
-                <p style={{ marginBottom: "1.2em" }}>Presente:</p>
-
-                <p style={{ textAlign: "center", fontWeight: "bold", textDecoration: "underline", marginBottom: "1.2em" }}>
-                    Ref.: SOLICITUD DE CASO ESPECIAL
-                </p>
-
-                <p style={{ marginBottom: "0.8em" }}>Distinguido Director:</p>
-
-                <p style={{ textAlign: "justify", marginBottom: "0.8em" }}>
-                    Mediante la presente, tengo a bien dirigirme a su autoridad para solicitar mi adición
-                    de materias a través de caso especial. Necesito adicionar como caso especial un total de{" "}
-                    <strong>{materiasCaso.length} materia{materiasCaso.length !== 1 ? "s" : ""}</strong>{" "}
-                    para la presente gestión <strong>{datos.gestion}</strong>.
-                </p>
-
-                <p style={{ textAlign: "justify", marginBottom: "0.8em" }}>
-                    El motivo de mi solicitud se fundamenta en la necesidad de nivelación académica. Al
-                    encontrarme cursando el cuarto semestre de la carrera de {carreraInfo.nombre},
-                    busco optimizar mi avance curricular para completar las materias del plan de estudios
-                    en el menor tiempo posible.
-                </p>
-
-                <p style={{ marginBottom: "0.8em" }}>
-                    Para tal efecto, detallo a continuación las materias que solicito sean adicionadas:
-                </p>
-
-                <p style={{ fontWeight: "bold", marginBottom: "0.8em" }}>
-                    TENGO UN PPA: <span style={{ textDecoration: "underline" }}>{datos.ppa}</span>
-                </p>
-
-                <p style={{ marginBottom: "0.4em" }}>
-                    Materias a inscribir en el semestre <strong>{datos.gestion}</strong> por caso especial:
-                </p>
-
-                <table style={{ marginBottom: "1.5em" }}>
-                    <thead>
-                        <tr>
-                            <th style={{ width: "10%" }}>N°</th>
-                            <th style={{ width: "55%" }}>NOMBRE DE MATERIA</th>
-                            <th style={{ width: "15%" }}>SIGLA</th>
-                            <th style={{ width: "20%" }}>GRUPO</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {materiasCaso.map((m, i) => (
-                            <tr key={m.sigla}>
-                                <td>{i + 1}</td>
-                                <td>{m.nombre}</td>
-                                <td style={{ fontFamily: "monospace" }}>{m.sigla}</td>
-                                <td style={{ fontWeight: "bold" }}>{m.grupo}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-
-                <p style={{ marginBottom: "2em" }}>
-                    Sin otro particular, me despido con un saludo a usted atentamente:
-                </p>
-
-                <div style={{ marginTop: "1.5em" }}>
-                    <p style={{ margin: "0.1em 0" }}><strong>Univ.:</strong> {datos.nombre}</p>
-                    <p style={{ margin: "0.1em 0" }}><strong>Reg.:</strong> {datos.registro}</p>
-                    <p style={{ margin: "0.1em 0" }}><strong>C.I.:</strong> {datos.ci}</p>
-                    <p style={{ margin: "0.1em 0" }}><strong>Cel.:</strong> {datos.celular || "—"}</p>
-                </div>
             </div>
         </div>
     )

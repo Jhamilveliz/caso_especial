@@ -116,7 +116,7 @@ export default function DatosPage() {
                     <div className="inline-flex items-center gap-2 bg-blue-800 text-white text-xs font-semibold px-3 py-1 rounded mb-3 tracking-widest uppercase">
                         FICCT — U.A.G.R.M.
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-900 leading-tight">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
                         Solicitud de{" "}
                         <span className="text-red-700">Caso Especial</span>
                     </h1>
@@ -140,7 +140,7 @@ export default function DatosPage() {
                 {/* ── Formulario ── */}
                 <form
                     onSubmit={handleSubmit}
-                    className="space-y-5 bg-white rounded-xl p-7 border border-gray-200 shadow-sm"
+                    className="space-y-5 bg-white rounded-xl p-4 sm:p-7 border border-gray-200 shadow-sm"
                 >
 
                     {/* Carrera */}
@@ -182,7 +182,8 @@ export default function DatosPage() {
                     </div>
 
                     {/* Registro, CI y Celular - AHORA EN 3 COLUMNAS */}
-                    <div className="grid grid-cols-3 gap-4">
+                    {/* Responsive: 1 col en mobile, 3 col en sm+ */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <label className={labelClass}>Registro universitario</label>
                             <input
@@ -219,7 +220,8 @@ export default function DatosPage() {
                     </div>
 
                     {/* PPA y Gestión */}
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Responsive: 1 col en mobile, 2 col en sm+ */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className={labelClass}>PPA</label>
                             <input

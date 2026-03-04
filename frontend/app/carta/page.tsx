@@ -87,7 +87,7 @@ export default function CartaPage() {
                     <div className="inline-flex items-center gap-2 bg-blue-800 text-white text-xs font-semibold px-3 py-1 rounded mb-3 tracking-widest uppercase">
                         FICCT — U.A.G.R.M.
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900">
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                         Vista Previa de la{" "}
                         <span className="text-red-700">Carta</span>
                     </h1>
@@ -129,6 +129,7 @@ export default function CartaPage() {
                 </div>
 
                 {/* Materias caso especial */}
+                {/* Tabla de materias caso especial — con scroll horizontal en mobile */}
                 <div className="mb-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                     <div className="px-5 py-3 bg-red-50 border-b border-red-200 flex items-center gap-2">
                         <span className="text-red-700 font-bold text-sm">🔴 Materias — Caso Especial</span>
@@ -136,26 +137,28 @@ export default function CartaPage() {
                     {materiasCaso.length === 0 ? (
                         <div className="p-5 text-gray-500 text-sm">No hay materias marcadas como caso especial.</div>
                     ) : (
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="text-left text-gray-500 text-xs uppercase tracking-widest border-b border-gray-200 bg-gray-50">
-                                    <th className="px-5 py-3">N°</th>
-                                    <th className="px-5 py-3">Materia</th>
-                                    <th className="px-5 py-3">Sigla</th>
-                                    <th className="px-5 py-3">Grupo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {materiasCaso.map((m, i) => (
-                                    <tr key={m.sigla} className="border-b border-gray-100 last:border-0">
-                                        <td className="px-5 py-3 text-gray-400">{i + 1}</td>
-                                        <td className="px-5 py-3 text-gray-900 font-medium">{m.nombre}</td>
-                                        <td className="px-5 py-3 text-blue-800 font-mono font-semibold">{m.sigla}</td>
-                                        <td className="px-5 py-3 text-red-700 font-bold">{m.grupo}</td>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm min-w-[400px]">
+                                <thead>
+                                    <tr className="text-left text-gray-500 text-xs uppercase tracking-widest border-b border-gray-200 bg-gray-50">
+                                        <th className="px-5 py-3">N°</th>
+                                        <th className="px-5 py-3">Materia</th>
+                                        <th className="px-5 py-3">Sigla</th>
+                                        <th className="px-5 py-3">Grupo</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {materiasCaso.map((m, i) => (
+                                        <tr key={m.sigla} className="border-b border-gray-100 last:border-0">
+                                            <td className="px-5 py-3 text-gray-400">{i + 1}</td>
+                                            <td className="px-5 py-3 text-gray-900 font-medium">{m.nombre}</td>
+                                            <td className="px-5 py-3 text-blue-800 font-mono font-semibold">{m.sigla}</td>
+                                            <td className="px-5 py-3 text-red-700 font-bold">{m.grupo}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     )}
                 </div>
 
@@ -164,9 +167,10 @@ export default function CartaPage() {
                     <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">
                         📄 Carta generada
                     </h2>
+                    {/* Carta formal — con scroll horizontal si la pantalla es muy pequeña */}
                     <div
                         id="carta-imprimible"
-                        className="bg-white text-black rounded-xl border border-gray-200 shadow-sm p-8 md:p-12 text-sm leading-relaxed"
+                        className="bg-white text-black rounded-xl border border-gray-200 shadow-sm p-5 sm:p-8 md:p-12 text-sm leading-relaxed overflow-x-auto"
                         style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
                     >
                         {/* Fecha y ciudad - Formato: Santa Cruz, 04 de marzo de 2026 */}
