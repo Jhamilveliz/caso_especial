@@ -1,115 +1,147 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { useCasoEspecial, DatosPersonales } from "@/lib/store"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCasoEspecial } from "@/lib/store";
 
 /* =========================
-   OPCIONES DE CARRERA
+   DATOS ESTÁTICOS
 ========================= */
-
 const CARRERAS = [
-    { id: "sistemas_187_4", label: "Ingeniería en Sistemas (187-4)" },
-    { id: "informatica_187_3", label: "Ingeniería Informática (187-3)" },
-    { id: "redes_187_5", label: "Ingeniería en Redes y Telecomunicaciones (187-5)" },
-    { id: "robotica_323_0", label: "Ingeniería en Robótica (323-0)" },
-    { id: "informatica_menciones", label: "Ingeniería Informática con Menciones (188-0)" },
-]
+    { id: "Informática", label: "Ing. Informática" },
+    { id: "Sistemas", label: "Ing. en Sistemas" },
+    { id: "Redes", label: "Ing. en Redes y Telecomunicaciones" },
+    { id: "Robótica", label: "Ing. Robótica" },
+];
+
+const getDirector = (carreraId: string): string => {
+    switch (carreraId) {
+        case "Sistemas":
+            return "Msc. Leonardo Vargas Peña";
+        case "Redes":
+            return "Msc. Jorge Marcelo Rosales Fuentes";
+        case "Informática":
+        case "Robótica":
+            return "Msc. José Junior Villagómez Melgar";
+        default:
+            return "";
+    }
+};
 
 /* =========================
-   HELPERS
+   HELPERS DE ESTILO
 ========================= */
-
 const inputClass =
-    "w-full bg-zinc-800 border border-zinc-700 text-white rounded-lg px-4 py-3 " +
-    "focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 " +
-    "placeholder-zinc-500 transition"
+    "w-full bg-white border border-gray-300 text-gray-800 rounded-md px-4 py-2.5 " +
+    "focus:outline-none focus:border-blue-700 focus:ring-1 focus:ring-blue-700 " +
+    "placeholder-gray-400 transition text-sm font-normal";
 
-const labelClass = "block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-1"
+const labelClass =
+    "block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1";
+
+const errorClass = "text-red-600 text-xs mt-1";
+
+const PASOS = ["Datos", "Malla", "Carta", "Descarga"];
 
 /* =========================
-   COMPONENTE
+   COMPONENTE PRINCIPAL
 ========================= */
-
 export default function DatosPage() {
-    const router = useRouter()
-    const { datos, setDatos } = useCasoEspecial()
+    const router = useRouter();
+    const { datos, setDatos } = useCasoEspecial();
 
-    const [form, setForm] = useState<DatosPersonales>({ ...datos })
-    const [errors, setErrors] = useState<Record<string, string>>({})
+    const [form, setForm] = useState({
+        nombre: datos.nombre || "",
+        carrera: datos.carrera || "Informática",
+        ppa: datos.ppa || "",
+        ci: datos.ci || "",
+        registro: datos.registro || "",
+        celular: datos.celular || "", // <-- AGREGADO
+        gestion: datos.gestion || "",
+    });
 
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    /* ---- handlers ---- */
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
     ) => {
-        setForm({ ...form, [e.target.name]: e.target.value })
-        setErrors({ ...errors, [e.target.name]: "" })
-    }
+        const { name, value } = e.target;
+        setForm((prev) => ({ ...prev, [name]: value }));
+        setErrors((prev) => ({ ...prev, [name]: "" }));
+    };
 
     const validate = (): boolean => {
-        const newErrors: Record<string, string> = {}
-        if (!form.nombre.trim()) newErrors.nombre = "El nombre es obligatorio"
-        if (!form.registro.trim()) newErrors.registro = "El registro es obligatorio"
-        if (!form.ci.trim()) newErrors.ci = "El CI es obligatorio"
-        if (!form.celular.trim()) newErrors.celular = "El celular es obligatorio"
-        if (!form.ppa.trim()) newErrors.ppa = "El PPA es obligatorio"
-        else if (isNaN(Number(form.ppa)) || Number(form.ppa) < 0 || Number(form.ppa) > 100)
-            newErrors.ppa = "El PPA debe ser un número entre 0 y 100"
-        if (!form.materiasInscritas.trim()) newErrors.materiasInscritas = "Indica cuántas materias tienes inscritas"
+        const e: Record<string, string> = {};
 
-        setErrors(newErrors)
-        return Object.keys(newErrors).length === 0
-    }
+        if (!form.nombre.trim()) e.nombre = "El nombre es obligatorio";
+        if (!form.registro.trim()) e.registro = "El registro es obligatorio";
+        if (!form.ci.trim()) e.ci = "El carnet de identidad es obligatorio";
+        // El celular es opcional, no lo validamos
+        if (!form.ppa.trim()) e.ppa = "El PPA es obligatorio";
+        else if (isNaN(Number(form.ppa)) || Number(form.ppa) < 0 || Number(form.ppa) > 100)
+            e.ppa = "El PPA debe ser un número entre 0 y 100";
+        if (!form.gestion.trim()) e.gestion = "La gestión es obligatoria";
+
+        setErrors(e);
+        return Object.keys(e).length === 0;
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!validate()) return
-        setDatos(form)
-        router.push("/malla")
-    }
+        e.preventDefault();
+        if (!validate()) return;
 
+        setDatos({
+            universidad: "Universidad Autónoma Gabriel René Moreno",
+            nombre: form.nombre,
+            carrera: form.carrera,
+            director: getDirector(form.carrera),
+            ppa: form.ppa,
+            ci: form.ci,
+            celular: form.celular, // <-- AHORA SE GUARDA EL VALOR DEL FORM
+            registro: form.registro,
+            gestion: form.gestion,
+        });
+
+        router.push("/malla");
+    };
+
+    /* ---- render ---- */
     return (
-        <div className="min-h-screen bg-gradient-to-br from-zinc-950 to-black text-white flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="w-full max-w-2xl">
 
-                {/* Header */}
-                <div className="mb-8 border-t-4 border-yellow-400 pt-5">
-                    <p className="text-xs font-bold text-yellow-400 tracking-[0.3em] uppercase mb-1">
+                {/* ── Header ── */}
+                <div className="mb-7">
+                    <div className="inline-flex items-center gap-2 bg-blue-800 text-white text-xs font-semibold px-3 py-1 rounded mb-3 tracking-widest uppercase">
                         FICCT — U.A.G.R.M.
-                    </p>
-                    <h1 className="text-3xl font-black text-white">
+                    </div>
+                    <h1 className="text-3xl font-bold text-gray-900 leading-tight">
                         Solicitud de{" "}
-                        <span className="text-yellow-400">Caso Especial</span>
+                        <span className="text-red-700">Caso Especial</span>
                     </h1>
-                    <p className="text-zinc-500 text-sm mt-1">
+                    <p className="text-gray-500 text-sm mt-1">
                         Paso 1 de 4 — Ingresá tus datos personales
                     </p>
                 </div>
 
-                {/* Indicador de pasos */}
-                <div className="flex gap-2 mb-8">
-                    {["Datos", "Malla", "Carta", "Descarga"].map((paso, i) => (
-                        <div key={paso} className="flex-1 text-center">
-                            <div className={`h-1.5 rounded-full mb-1 ${i === 0 ? "bg-yellow-400" : "bg-zinc-700"}`} />
-                            <span className={`text-xs ${i === 0 ? "text-yellow-400 font-semibold" : "text-zinc-600"}`}>
+                {/* ── Indicador de pasos ── */}
+                <div className="flex gap-2 mb-7">
+                    {PASOS.map((paso, i) => (
+                        <div key={paso} className="flex-1">
+                            <div className={`h-1 rounded-full mb-1 ${i === 0 ? "bg-red-600" : "bg-gray-200"}`} />
+                            <span className={`text-xs font-medium ${i === 0 ? "text-red-600" : "text-gray-400"}`}>
                                 {paso}
                             </span>
                         </div>
                     ))}
                 </div>
 
-                {/* Formulario */}
-                <form onSubmit={handleSubmit} className="space-y-5 bg-zinc-900 rounded-2xl p-7 border border-zinc-800">
-
-                    {/* Universidad */}
-                    <div>
-                        <label className={labelClass}>Universidad</label>
-                        <input
-                            name="universidad"
-                            value={form.universidad}
-                            onChange={handleChange}
-                            className={inputClass}
-                        />
-                    </div>
+                {/* ── Formulario ── */}
+                <form
+                    onSubmit={handleSubmit}
+                    className="space-y-5 bg-white rounded-xl p-7 border border-gray-200 shadow-sm"
+                >
 
                     {/* Carrera */}
                     <div>
@@ -120,27 +152,37 @@ export default function DatosPage() {
                             onChange={handleChange}
                             className={inputClass}
                         >
-                            {CARRERAS.map(c => (
+                            {CARRERAS.map((c) => (
                                 <option key={c.id} value={c.id}>{c.label}</option>
                             ))}
                         </select>
                     </div>
 
-                    {/* Nombre */}
+                    {/* Director (solo lectura) */}
                     <div>
-                        <label className={labelClass}>Nombre completo</label>
+                        <label className={labelClass}>Director de carrera</label>
+                        <input
+                            readOnly
+                            value={getDirector(form.carrera)}
+                            className={`${inputClass} bg-gray-50 text-gray-500 cursor-default`}
+                        />
+                    </div>
+
+                    {/* Nombre completo */}
+                    <div>
+                        <label className={labelClass}>Nombre y apellido</label>
                         <input
                             name="nombre"
                             placeholder="Ej: Juan Carlos Pérez Rojas"
                             value={form.nombre}
                             onChange={handleChange}
-                            className={`${inputClass} ${errors.nombre ? "border-red-500" : ""}`}
+                            className={`${inputClass} ${errors.nombre ? "border-red-500 ring-1 ring-red-400" : ""}`}
                         />
-                        {errors.nombre && <p className="text-red-400 text-xs mt-1">{errors.nombre}</p>}
+                        {errors.nombre && <p className={errorClass}>⚠ {errors.nombre}</p>}
                     </div>
 
-                    {/* Registro y CI en grid */}
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Registro, CI y Celular - AHORA EN 3 COLUMNAS */}
+                    <div className="grid grid-cols-3 gap-4">
                         <div>
                             <label className={labelClass}>Registro universitario</label>
                             <input
@@ -148,35 +190,48 @@ export default function DatosPage() {
                                 placeholder="Ej: 219012345"
                                 value={form.registro}
                                 onChange={handleChange}
-                                className={`${inputClass} ${errors.registro ? "border-red-500" : ""}`}
+                                className={`${inputClass} ${errors.registro ? "border-red-500 ring-1 ring-red-400" : ""}`}
                             />
-                            {errors.registro && <p className="text-red-400 text-xs mt-1">{errors.registro}</p>}
+                            {errors.registro && <p className={errorClass}>⚠ {errors.registro}</p>}
                         </div>
                         <div>
-                            <label className={labelClass}>CI</label>
+                            <label className={labelClass}>Número de carnet</label>
                             <input
                                 name="ci"
                                 placeholder="Ej: 12345678"
                                 value={form.ci}
                                 onChange={handleChange}
-                                className={`${inputClass} ${errors.ci ? "border-red-500" : ""}`}
+                                className={`${inputClass} ${errors.ci ? "border-red-500 ring-1 ring-red-400" : ""}`}
                             />
-                            {errors.ci && <p className="text-red-400 text-xs mt-1">{errors.ci}</p>}
+                            {errors.ci && <p className={errorClass}>⚠ {errors.ci}</p>}
                         </div>
-                    </div>
-
-                    {/* Celular y Gestión en grid */}
-                    <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className={labelClass}>Celular</label>
                             <input
                                 name="celular"
-                                placeholder="Ej: 70011223"
+                                placeholder="Ej: 71234567"
                                 value={form.celular}
                                 onChange={handleChange}
-                                className={`${inputClass} ${errors.celular ? "border-red-500" : ""}`}
+                                className={`${inputClass} ${errors.celular ? "border-red-500 ring-1 ring-red-400" : ""}`}
                             />
-                            {errors.celular && <p className="text-red-400 text-xs mt-1">{errors.celular}</p>}
+                            {errors.celular && <p className={errorClass}>⚠ {errors.celular}</p>}
+                        </div>
+                    </div>
+
+                    {/* PPA y Gestión */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className={labelClass}>PPA</label>
+                            <input
+                                name="ppa"
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="Ej: 62.50"
+                                value={form.ppa}
+                                onChange={handleChange}
+                                className={`${inputClass} ${errors.ppa ? "border-red-500 ring-1 ring-red-400" : ""}`}
+                            />
+                            {errors.ppa && <p className={errorClass}>⚠ {errors.ppa}</p>}
                         </div>
                         <div>
                             <label className={labelClass}>Gestión</label>
@@ -185,58 +240,28 @@ export default function DatosPage() {
                                 placeholder="Ej: 01/2026"
                                 value={form.gestion}
                                 onChange={handleChange}
-                                className={inputClass}
+                                className={`${inputClass} ${errors.gestion ? "border-red-500 ring-1 ring-red-400" : ""}`}
                             />
+                            {errors.gestion && <p className={errorClass}>⚠ {errors.gestion}</p>}
                         </div>
                     </div>
 
-                    {/* PPA y Materias inscritas en grid */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className={labelClass}>
-                                PPA <span className="text-yellow-400">(obligatorio)</span>
-                            </label>
-                            <input
-                                name="ppa"
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.01"
-                                placeholder="Ej: 62.50"
-                                value={form.ppa}
-                                onChange={handleChange}
-                                className={`${inputClass} ${errors.ppa ? "border-red-500" : ""}`}
-                            />
-                            {errors.ppa && <p className="text-red-400 text-xs mt-1">{errors.ppa}</p>}
-                        </div>
-                        <div>
-                            <label className={labelClass}>Materias inscritas normalmente</label>
-                            <input
-                                name="materiasInscritas"
-                                type="number"
-                                min="0"
-                                placeholder="Ej: 4"
-                                value={form.materiasInscritas}
-                                onChange={handleChange}
-                                className={`${inputClass} ${errors.materiasInscritas ? "border-red-500" : ""}`}
-                            />
-                            {errors.materiasInscritas && <p className="text-red-400 text-xs mt-1">{errors.materiasInscritas}</p>}
-                        </div>
-                    </div>
+                    <div className="border-t border-gray-100 pt-1" />
 
-                    {/* Submit */}
+                    {/* Botón */}
                     <button
                         type="submit"
-                        className="w-full mt-2 bg-yellow-400 hover:bg-yellow-300 text-black font-black py-4 rounded-xl text-lg transition-all transform hover:scale-[1.02] shadow-lg shadow-yellow-400/20"
+                        className="w-full bg-blue-800 hover:bg-blue-900 active:scale-[0.99] text-white font-semibold py-3 rounded-md text-sm transition-all flex items-center justify-center gap-2"
                     >
-                        Continuar → Seleccionar Materias
+                        Continuar — Seleccionar Materias
+                        <span>→</span>
                     </button>
                 </form>
 
-                <p className="text-center text-zinc-600 text-xs mt-4">
-                    Tus datos solo se usan para generar la carta — nada se envía a ningún servidor.
+                <p className="text-center text-gray-400 text-xs mt-4">
+                    🔒 Tus datos solo se usan para generar la carta — nada se envía a ningún servidor.
                 </p>
             </div>
         </div>
-    )
+    );
 }

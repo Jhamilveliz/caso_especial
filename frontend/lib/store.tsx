@@ -13,22 +13,22 @@ import {
 
 export interface DatosPersonales {
     universidad: string
-    carrera: string        // key de mallas, e.g. "sistemas_187_4"
+    carrera: string
     nombre: string
     registro: string
     ci: string
     celular: string
     ppa: string
     gestion: string
-    materiasInscritas: string  // cantidad de materias normales
+    director: string  // se calcula automáticamente según la carrera
 }
 
-export type EstadoMateria = "pendiente" | "inscrita" | "caso"
+export type EstadoMateria = "pendiente" | "aprobada" | "inscrita" | "caso"
 
 export interface CasoEspecialState {
     datos: DatosPersonales
-    estadoMaterias: Record<string, EstadoMateria>   // sigla → estado
-    gruposMaterias: Record<string, string>           // sigla → grupo
+    estadoMaterias: Record<string, EstadoMateria>
+    gruposMaterias: Record<string, string>
     setDatos: (d: DatosPersonales) => void
     setEstadoMateria: (sigla: string, estado: EstadoMateria) => void
     setGrupoMateria: (sigla: string, grupo: string) => void
@@ -41,14 +41,14 @@ export interface CasoEspecialState {
 
 const defaultDatos: DatosPersonales = {
     universidad: "Universidad Autónoma Gabriel René Moreno",
-    carrera: "sistemas_187_4",
+    carrera: "Informática",
     nombre: "",
     registro: "",
     ci: "",
     celular: "",
     ppa: "",
     gestion: "01/2026",
-    materiasInscritas: ""
+    director: ""
 }
 
 /* =========================
