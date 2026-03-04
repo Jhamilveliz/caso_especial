@@ -148,7 +148,7 @@ function generarHTMLMalla(datos: any, carreraInfo: any, semestres: Semestre[], e
             const bg = ESTADO_BG[estado]
             const border = ESTADO_BORDER[estado]
             const text = ESTADO_TEXT[estado]
-            const grupo = estado === "caso" && gruposMaterias[mat.sigla] ? `<div style="font-size:6.5pt;color:#dc2626;font-weight:700;margin-top:2px;">G: ${gruposMaterias[mat.sigla]}</div>` : ""
+            const grupo = "" // No mostramos el grupo en la malla descargada
             return `
                 <td style="border:1px solid #e5e7eb;padding:4px;vertical-align:top;">
                     <div style="background:${bg};border:1px solid ${border};border-radius:4px;padding:4px 5px;min-height:42px;">

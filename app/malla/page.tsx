@@ -169,10 +169,18 @@ export default function MallaPage() {
     }
 
     const handleContinuar = () => {
-        if (casoCount === 0) { setError("Marcá al menos 1 materia como Caso Especial."); return }
-        const casoSiglas = Object.entries(estadoMaterias).filter(([, e]) => e === "caso").map(([s]) => s)
+        if (casoCount === 0) {
+            setError("Marcá al menos 1 materia como Caso Especial.")
+            return
+        }
+        const casoSiglas = Object.entries(estadoMaterias)
+            .filter(([, e]) => e === "caso")
+            .map(([s]) => s)
         const sinGrupo = casoSiglas.filter(s => !gruposMaterias[s]?.trim())
-        if (sinGrupo.length > 0 && !confirm(`Materias sin grupo: ${sinGrupo.join(", ")}. ¿Continuar?`)) return
+        if (sinGrupo.length > 0) {
+            setError(`Completá el grupo para: ${sinGrupo.join(", ")}`)
+            return
+        }
         router.push("/carta")
     }
 
