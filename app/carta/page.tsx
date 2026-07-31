@@ -11,6 +11,7 @@ import { mallas } from "@/data/mallas"
 
 const CARRERA_INFO: Record<string, { director: string; nombre: string; codigo: string }> = {
     "Informática": { director: "Msc. José Junior Villagómez Melgar", nombre: "INGENIERÍA INFORMÁTICA", codigo: "187-3" },
+    "Informática 187-6": { director: "Msc. José Junior Villagómez Melgar", nombre: "INGENIERÍA INFORMÁTICA", codigo: "187-6" },
     "Sistemas": { director: "Msc. Leonardo Vargas Peña", nombre: "INGENIERÍA EN SISTEMAS", codigo: "187-4" },
     "Redes": { director: "Msc. Jorge Marcelo Rosales Fuentes", nombre: "INGENIERÍA EN REDES Y TELECOMUNICACIONES", codigo: "187-5" },
     "Robótica": { director: "Msc. José Junior Villagómez Melgar", nombre: "INGENIERÍA EN ROBÓTICA", codigo: "323-0" },
@@ -34,6 +35,7 @@ export default function CartaPage() {
     // Mapa de carrera → key de mallas
     const mapaCarrera: Record<string, string> = {
         "Informática": "informatica_187_3",
+        "Informática 187-6": "informatica_187_6",
         "Sistemas": "sistemas_187_4",
         "Redes": "redes_187_5",
         "Robótica": "robotica_323_0",

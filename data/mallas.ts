@@ -277,6 +277,120 @@ export const mallas = {
         ]
     },
 
+    informatica_187_6: {
+        codigo: "187-6",
+        nombre: "Ingeniería Informática",
+        troncal: [
+  {
+    semestre: 1,
+    materias: [
+      { nombre: "Cálculo I", sigla: "MAT101" },
+      { nombre: "Estructuras Discretas", sigla: "INF119" },
+      { nombre: "Física I", sigla: "FIS100" },
+      { nombre: "Introducción a la Programación", sigla: "INF110" },
+      { nombre: "Arquitectura de Computadoras", sigla: "INF111" },
+      { nombre: "Metodología de la Investigación", sigla: "MET100" },
+    ]
+  },
+  {
+    semestre: 2,
+    materias: [
+      { nombre: "Cálculo II", sigla: "MAT102", prerequisitos: ["MAT101"]  },
+      { nombre: "Álgebra Lineal", sigla: "MAT103", prerequisitos: ["INF119"]},
+      { nombre: "Física II", sigla: "FIS102", prerequisitos: ["FIS100"] },
+      { nombre: "Programación I", sigla: "INF120", prerequisitos: ["INF110"] },
+      { nombre: "Base de Datos I", sigla: "INF112", prerequisitos: ["INF110"] },
+      { nombre: "Sistemas Operativos I", sigla: "INF123", ṕrerequisitos: ["INF111"] },
+    ]
+  },
+  {
+    semestre: 3,
+    materias: [
+      { nombre: "Ecuaciones Diferenciales", sigla: "MAT207", prerequisitos: ["MAT102"] },
+      { nombre: "Ingeniería de Requisitos y Modelado", sigla: "INF219", prerequisitos: ["INF112"] },
+      { nombre: "Programación II", sigla: "INF210", prerequisitos: ["MAT103", "INF120"] },
+      { nombre: "Base de Datos II", sigla: "INF212", prerequisitos: ["INF112"] },
+      { nombre: "Redes I", sigla: "INF225", prerequisitos: ["INF112", "INF123"] },
+      { nombre: "Sistemas Operativos II", sigla: "INF223", prerequisitos: ["INF123"] },
+    ]
+  },
+  {
+    semestre: 4,
+    materias: [
+      { nombre: "Probabilidades y Estadística I", sigla: "MAT202",prerequisitos: ["MAT102"]},
+      { nombre: "Métodos Numéricos", sigla: "MAT205", prerequisitos: ["MAT207"] },
+      { nombre: "Arquitectura de Software", sigla: "INF252", prerequisitos: ["INF219"]},
+      { nombre: "Estructura de Datos I", sigla: "INF220", prerequisitos:["INF210"] },
+      { nombre: "Programación Web I", sigla: "INF240", prerequisitos:["INF212"] },
+      { nombre: "Redes II", sigla: "INF226", prerequisitos:["INF225"] },
+    ]
+  },
+  {
+    semestre: 5,
+    materias: [
+      { nombre: "Probabilidades y Estadística II", sigla: "MAT302", prerequisitos:["MAT202"] },
+      { nombre: "Taller de Sistemas", sigla: "INF342", prerequisitos: ["INF252"]},
+      { nombre: "Programación Lógica y Funcional", sigla: "INF318", prerequisitos: ["INF220"] },
+      { nombre: "Programación Web II", sigla: "INF340", prerequisitos: ["INF240"] },
+      { nombre: "Criptografía", sigla: "INF307" , prerequisitos: ["INF210"]},
+      { nombre: "Estructuras de Datos II", sigla: "INF310", prerequisitos: ["INF220"] },
+      { nombre: "Seguridad en B.D. y S.O.", sigla: "INF312", prerequisitos: ["INF212", "INF223"] },       // Solo C
+      { nombre: "Lenguajes Formales", sigla: "INF319", prerequisitos: ["INF220"] },               // Solo CS
+      { nombre: "Herramientas de Desarrollo de Software", sigla: "INF311", prerequisitos: ["INF252"] }, // Solo D
+    ]
+  },
+  {
+    semestre: 6,
+    materias: [
+      { nombre: "Investigación Operativa I", sigla: "MAT329", prerequisitos: ["MAT302", "MAT205"] },
+      { nombre: "Inteligencia Artificial", sigla: "INF321" , prerequisitos: ["INF310", "INF318"]},
+      { nombre: "Programación Móvil", sigla: "INF341" , prerequisitos: ["INF340"]},
+      { nombre: "Seguridad en Redes", sigla: "INF350" , prerequisitos: ["INF226"]},
+      { nombre: "Legislación Informática y Ética", sigla: "INF308", prerequisitos: ["MET100"] },
+      { nombre: "Seguridad en Desarrollo de Aplicaciones", sigla: "INF352" , prerequisitos: ["INF307"]},        // Solo C
+      { nombre: "Gestión de Riesgos de Ciberseguridad", sigla: "INF322" , prerequisitos: ["INF312"]}, // Solo C
+      { nombre: "Compiladores", sigla: "INF329", prerequisitos: ["INF319"] },                     // Solo CS
+      { nombre: "Sistemas de Información Geográfica", sigla: "INF351", prerequisitos: ["INF342"] }, // CS y D
+      { nombre: "Gestión de Configuración de Software", sigla: "INF320" , prerequisitos: ["INF342", "INF311"]}, // Solo D
+    ]
+  },
+  {
+    semestre: 7,
+    materias: [
+      { nombre: "Investigación Operativa II", sigla: "MAT419", prerequisitos:["MAT329"] },
+      { nombre: "Ingeniería de Software I", sigla: "INF422", prerequisitos:["INF342"] },
+      { nombre: "Gestión de Infraestructura TI", sigla: "INF432" , prerequisitos:[""]},
+      { nombre: "Machine Learning", sigla: "INF461" , prerequisitos:["INF321"]},
+      { nombre: "Liderazgo, Emprendimiento y Startup", sigla: "INF406", prerequisitos:["INF308"] },
+      { nombre: "Computación en la Nube", sigla: "INF404", prerequisitos:["INF341"] },          
+      { nombre: "Informática Forense", sigla: "INF405", prerequisitos:["INF322"] },             
+      { nombre: "Computación Gráfica", sigla: "INF402", prerequisitos:["INF329", "INF310"] },             
+      { nombre: "Sistemas Distribuidos y Computación Paralela", sigla: "INF403" , prerequisitos:[]}, 
+      { nombre: "Optimización de Desarrollo de Aplicaciones", sigla: "INF401" , prerequisitos:["INF342"]}, // Solo D
+    ]
+  },
+  {
+    semestre: 8,
+    materias: [
+      { nombre: "Taller de Grado I", sigla: "INF411" },
+      { nombre: "Ingeniería de Software II", sigla: "INF423" },
+      { nombre: "Interacción Hombre-Computadora", sigla: "INF408" },
+      { nombre: "Gestión de la Seguridad de la Información", sigla: "INF452" },
+      { nombre: "Preparación y Evaluación de Proyectos", sigla: "ECO449" },
+      { nombre: "Seguridad Lógica y Física", sigla: "INF410" },       
+      { nombre: "Auditoría Informática", sigla: "INF409" },           
+      { nombre: "Testing y Calidad de Software", sigla: "INF407" },   
+    ]
+  },
+  {
+    semestre: 9,
+    materias: [
+      { nombre: "Prácticas Profesionales", sigla: "INF512" },
+      { nombre: "Modalidad de Graduación", sigla: "GRL001" },
+    ]
+  },
+]
+    },
     redes_187_5: {
         codigo: "187-5",
         nombre: "Ingeniería en Redes y Telecomunicaciones",

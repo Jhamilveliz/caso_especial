@@ -9,6 +9,7 @@ import { useCasoEspecial } from "@/lib/store";
 ========================= */
 const CARRERAS = [
     { id: "Informática", label: "Ing. Informática" },
+    { id: "Informática 187-6", label: "Ing. Informática (Plan 187-6)" },
     { id: "Sistemas", label: "Ing. en Sistemas" },
     { id: "Redes", label: "Ing. en Redes y Telecomunicaciones" },
     { id: "Robótica", label: "Ing. Robótica" },
@@ -21,6 +22,7 @@ const getDirector = (carreraId: string): string => {
         case "Redes":
             return "Msc. Jorge Marcelo Rosales Fuentes";
         case "Informática":
+        case "Informática 187-6":
         case "Robótica":
             return "Msc. José Junior Villagómez Melgar";
         default:

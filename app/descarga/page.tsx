@@ -11,6 +11,7 @@ import { mallas, Materia, Semestre } from "@/data/mallas"
 
 const CARRERA_INFO: Record<string, { director: string; nombre: string }> = {
     "Informática": { director: "Msc. José Junior Villagómez Melgar", nombre: "INGENIERÍA INFORMÁTICA" },
+    "Informática 187-6": { director: "Msc. José Junior Villagómez Melgar", nombre: "INGENIERÍA INFORMÁTICA (Plan 187-6)" },
     "Sistemas": { director: "Msc. Leonardo Vargas Peña", nombre: "INGENIERÍA EN SISTEMAS" },
     "Redes": { director: "Msc. Jorge Marcelo Rosales Fuentes", nombre: "INGENIERÍA EN REDES Y TELECOMUNICACIONES" },
     "Robótica": { director: "Msc. José Junior Villagómez Melgar", nombre: "INGENIERÍA EN ROBÓTICA" },
@@ -21,6 +22,7 @@ const PASOS = ["Datos", "Malla", "Carta", "Descarga"]
 function getSemestres(carreraId: string): Semestre[] {
     const mapaCarrera: Record<string, string> = {
         "Informática": "informatica_187_3",
+        "Informática 187-6": "informatica_187_6",
         "Sistemas": "sistemas_187_4",
         "Redes": "redes_187_5",
         "Robótica": "robotica_323_0",

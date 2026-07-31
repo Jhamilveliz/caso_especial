@@ -12,6 +12,7 @@ import { mallas, Semestre, Materia } from "@/data/mallas"
 function getSemestres(carreraId: string): Semestre[] {
     const mapaCarrera: Record<string, string> = {
         "Informática": "informatica_187_3",
+        "Informática 187-6": "informatica_187_6",
         "Sistemas": "sistemas_187_4",
         "Redes": "redes_187_5",
         "Robótica": "robotica_323_0",
@@ -25,6 +26,7 @@ function getSemestres(carreraId: string): Semestre[] {
 function getNombreCarrera(id: string): string {
     const map: Record<string, string> = {
         "Informática": "INGENIERÍA INFORMÁTICA",
+        "Informática 187-6": "INGENIERÍA INFORMÁTICA (Plan 187-6)",
         "Sistemas": "INGENIERÍA EN SISTEMAS",
         "Redes": "ING. EN REDES Y TELECOMUNICACIONES",
         "Robótica": "INGENIERÍA EN ROBÓTICA",
@@ -35,6 +37,7 @@ function getNombreCarrera(id: string): string {
 function getPlanCode(id: string): string {
     const map: Record<string, string> = {
         "Sistemas": "187-4", "Informática": "187-3",
+        "Informática 187-6": "187-6",
         "Redes": "187-5", "Robótica": "323-0",
     }
     return map[id] ?? ""
