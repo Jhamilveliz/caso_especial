@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "motion/react";
 import { useCasoEspecial } from "@/lib/store";
 
 /* =========================
@@ -46,6 +47,29 @@ const errorClass = "text-red-600 text-xs mt-1";
 const PASOS = ["Datos", "Malla", "Carta", "Descarga"];
 
 /* =========================
+   VARIANTES MOTION
+========================= */
+const containerStagger = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: { staggerChildren: 0.06, delayChildren: 0.08 },
+    },
+};
+
+const fieldUp = {
+    hidden: { opacity: 0, y: 14 },
+    show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 280, damping: 24 } },
+};
+
+const shake = {
+    shake: {
+        x: [0, -6, 6, -5, 5, -3, 3, 0],
+        transition: { duration: 0.4 },
+    },
+};
+
+/* =========================
    COMPONENTE PRINCIPAL
 ========================= */
 export default function DatosPage() {
@@ -67,7 +91,7 @@ export default function DatosPage() {
 
     /* ---- handlers ---- */
     const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
         const { name, value } = e.target;
         setForm((prev) => ({ ...prev, [name]: value }));
@@ -80,7 +104,6 @@ export default function DatosPage() {
         if (!form.nombre.trim()) e.nombre = "El nombre es obligatorio";
         if (!form.registro.trim()) e.registro = "El registro es obligatorio";
         if (!form.ci.trim()) e.ci = "El carnet de identidad es obligatorio";
-        // El celular es opcional, no lo validamos
         if (!form.ppa.trim()) e.ppa = "El PPA es obligatorio";
         else if (isNaN(Number(form.ppa)) || Number(form.ppa) < 0 || Number(form.ppa) > 100)
             e.ppa = "El PPA debe ser un número entre 0 y 100";
@@ -112,43 +135,70 @@ export default function DatosPage() {
 
     /* ---- render ---- */
     return (
-        <div className="min-h-screen w-full flex items-center justify-center px-4 sm:px-6 lg:px-8">
-            <div className="w-full max-w-2xl">
-
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+            className="min-h-screen w-full flex items-center justify-center px-4 sm:px-6 lg:px-8"
+        >
+            <motion.div
+                variants={containerStagger}
+                initial="hidden"
+                animate="show"
+                className="w-full max-w-2xl"
+            >
                 {/* ── Header ── */}
-                <div className="mb-7">
-                    <div className="inline-flex items-center gap-2 bg-blue-800 text-white text-xs font-semibold px-3 py-1 rounded mb-3 tracking-widest uppercase">
+                <motion.div variants={fieldUp} className="mb-7">
+                    <motion.div
+                        variants={fieldUp}
+                        className="inline-flex items-center gap-2 bg-blue-800 text-white text-xs font-semibold px-3 py-1 rounded mb-3 tracking-widest uppercase"
+                    >
                         FICCT — U.A.G.R.M.
-                    </div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
+                    </motion.div>
+                    <motion.h1
+                        variants={fieldUp}
+                        className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight"
+                    >
                         Solicitud de{" "}
-                        <span className="text-red-700">Caso Especial</span>
-                    </h1>
-                    <p className="text-gray-500 text-sm mt-1">
+                        <motion.span
+                            className="text-red-700 inline-block"
+                            animate={{ scale: [1, 1.04, 1] }}
+                            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                            Caso Especial
+                        </motion.span>
+                    </motion.h1>
+                    <motion.p variants={fieldUp} className="text-gray-500 text-sm mt-1">
                         Paso 1 de 4 — Ingresá tus datos personales
-                    </p>
-                </div>
+                    </motion.p>
+                </motion.div>
 
                 {/* ── Indicador de pasos ── */}
-                <div className="flex gap-2 mb-7">
+                <motion.div variants={fieldUp} className="flex gap-2 mb-7">
                     {PASOS.map((paso, i) => (
-                        <div key={paso} className="flex-1">
-                            <div className={`h-1 rounded-full mb-1 ${i === 0 ? "bg-red-600" : "bg-gray-200"}`} />
+                        <div key={paso} className="flex-1 relative">
+                            <motion.div
+                                className={`h-1 rounded-full mb-1 ${i === 0 ? "" : "bg-gray-200"}`}
+                                animate={i === 0
+                                    ? { background: ["#dc2626", "#ef4444", "#dc2626"] }
+                                    : {}}
+                                transition={i === 0 ? { duration: 2, repeat: Infinity } : {}}
+                            />
                             <span className={`text-xs font-medium ${i === 0 ? "text-red-600" : "text-gray-400"}`}>
                                 {paso}
                             </span>
                         </div>
                     ))}
-                </div>
+                </motion.div>
 
                 {/* ── Formulario ── */}
-                <form
+                <motion.form
+                    variants={fieldUp}
                     onSubmit={handleSubmit}
                     className="space-y-5 bg-white rounded-xl p-4 sm:p-7 border border-gray-200 shadow-sm"
                 >
-
                     {/* Carrera */}
-                    <div>
+                    <motion.div variants={fieldUp}>
                         <label className={labelClass}>Carrera</label>
                         <select
                             name="carrera"
@@ -160,127 +210,197 @@ export default function DatosPage() {
                                 <option key={c.id} value={c.id}>{c.label}</option>
                             ))}
                         </select>
-                    </div>
+                    </motion.div>
 
                     {/* Director (solo lectura) */}
-                    <div>
+                    <motion.div variants={fieldUp}>
                         <label className={labelClass}>Director de carrera</label>
-                        <input
+                        <motion.input
                             readOnly
                             value={getDirector(form.carrera)}
                             className={`${inputClass} bg-gray-50 text-gray-500 cursor-default`}
+                            // Re-anima el fade al cambiar director
+                            key={form.carrera}
+                            initial={{ opacity: 0.4 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.25 }}
                         />
-                    </div>
+                    </motion.div>
 
                     {/* Nombre completo */}
-                    <div>
+                    <motion.div variants={fieldUp}>
                         <label className={labelClass}>Nombre y apellido</label>
-                        <input
-                            name="nombre"
-                            placeholder="Ej: Juan Carlos Pérez Rojas"
-                            value={form.nombre}
-                            onChange={handleChange}
-                            className={`${inputClass} ${errors.nombre ? "border-red-500 ring-1 ring-red-400" : ""}`}
-                        />
-                        {errors.nombre && <p className={errorClass}>⚠ {errors.nombre}</p>}
-                    </div>
+                        <motion.div animate={errors.nombre ? "shake" : undefined} variants={shake}>
+                            <input
+                                name="nombre"
+                                placeholder="Ej: Juan Carlos Pérez Rojas"
+                                value={form.nombre}
+                                onChange={handleChange}
+                                className={`${inputClass} ${errors.nombre ? "border-red-500 ring-1 ring-red-400" : ""}`}
+                            />
+                        </motion.div>
+                        <AnimatePresence mode="wait">
+                            {errors.nombre && (
+                                <motion.p
+                                    key="err-nombre"
+                                    className={errorClass}
+                                    initial={{ opacity: 0, y: -4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0 }}
+                                >⚠ {errors.nombre}</motion.p>
+                            )}
+                        </AnimatePresence>
+                    </motion.div>
 
-                    {/* Registro, CI y Celular - AHORA EN 3 COLUMNAS */}
-                    {/* Responsive: 1 col en mobile, 3 col en sm+ */}
+                    {/* Registro, CI y Celular */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div>
+                        <motion.div variants={fieldUp}>
                             <label className={labelClass}>Registro universitario</label>
-                            <input
-                                name="registro"
-                                placeholder="Ej: 219012345"
-                                value={form.registro}
-                                onChange={handleChange}
-                                className={`${inputClass} ${errors.registro ? "border-red-500 ring-1 ring-red-400" : ""}`}
-                            />
-                            {errors.registro && <p className={errorClass}>⚠ {errors.registro}</p>}
-                        </div>
-                        <div>
+                            <motion.div animate={errors.registro ? "shake" : undefined} variants={shake}>
+                                <input
+                                    name="registro"
+                                    placeholder="Ej: 219012345"
+                                    value={form.registro}
+                                    onChange={handleChange}
+                                    className={`${inputClass} ${errors.registro ? "border-red-500 ring-1 ring-red-400" : ""}`}
+                                />
+                            </motion.div>
+                            <AnimatePresence mode="wait">
+                                {errors.registro && (
+                                    <motion.p
+                                        key="err-registro"
+                                        className={errorClass}
+                                        initial={{ opacity: 0, y: -4 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0 }}
+                                    >⚠ {errors.registro}</motion.p>
+                                )}
+                            </AnimatePresence>
+                        </motion.div>
+                        <motion.div variants={fieldUp}>
                             <label className={labelClass}>Número de carnet</label>
-                            <input
-                                name="ci"
-                                placeholder="Ej: 12345678"
-                                value={form.ci}
-                                onChange={handleChange}
-                                className={`${inputClass} ${errors.ci ? "border-red-500 ring-1 ring-red-400" : ""}`}
-                            />
-                            {errors.ci && <p className={errorClass}>⚠ {errors.ci}</p>}
-                        </div>
-                        <div>
+                            <motion.div animate={errors.ci ? "shake" : undefined} variants={shake}>
+                                <input
+                                    name="ci"
+                                    placeholder="Ej: 12345678"
+                                    value={form.ci}
+                                    onChange={handleChange}
+                                    className={`${inputClass} ${errors.ci ? "border-red-500 ring-1 ring-red-400" : ""}`}
+                                />
+                            </motion.div>
+                            <AnimatePresence mode="wait">
+                                {errors.ci && (
+                                    <motion.p
+                                        key="err-ci"
+                                        className={errorClass}
+                                        initial={{ opacity: 0, y: -4 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0 }}
+                                    >⚠ {errors.ci}</motion.p>
+                                )}
+                            </AnimatePresence>
+                        </motion.div>
+                        <motion.div variants={fieldUp}>
                             <label className={labelClass}>Celular</label>
                             <input
                                 name="celular"
                                 placeholder="Ej: 71234567"
                                 value={form.celular}
                                 onChange={handleChange}
-                                className={`${inputClass} ${errors.celular ? "border-red-500 ring-1 ring-red-400" : ""}`}
+                                className={inputClass}
                             />
-                            {errors.celular && <p className={errorClass}>⚠ {errors.celular}</p>}
-                        </div>
+                        </motion.div>
                     </div>
 
                     {/* PPA y Semestre */}
-                    {/* Responsive: 1 col en mobile, 2 col en sm+ */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
+                        <motion.div variants={fieldUp}>
                             <label className={labelClass}>PPA</label>
-                            <input
-                                name="ppa"
-                                type="text"
-                                inputMode="decimal"
-                                placeholder="Ej: 62.50"
-                                value={form.ppa}
-                                onChange={handleChange}
-                                className={`${inputClass} ${errors.ppa ? "border-red-500 ring-1 ring-red-400" : ""}`}
-                            />
-                            {errors.ppa && <p className={errorClass}>⚠ {errors.ppa}</p>}
-                        </div>
-                        <div>
+                            <motion.div animate={errors.ppa ? "shake" : undefined} variants={shake}>
+                                <input
+                                    name="ppa"
+                                    type="text"
+                                    inputMode="decimal"
+                                    placeholder="Ej: 62.50"
+                                    value={form.ppa}
+                                    onChange={handleChange}
+                                    className={`${inputClass} ${errors.ppa ? "border-red-500 ring-1 ring-red-400" : ""}`}
+                                />
+                            </motion.div>
+                            <AnimatePresence mode="wait">
+                                {errors.ppa && (
+                                    <motion.p
+                                        key="err-ppa"
+                                        className={errorClass}
+                                        initial={{ opacity: 0, y: -4 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0 }}
+                                    >⚠ {errors.ppa}</motion.p>
+                                )}
+                            </AnimatePresence>
+                        </motion.div>
+                        <motion.div variants={fieldUp}>
                             <label className={labelClass}>Semestre</label>
-                            <input
-                                name="gestion"
-                                placeholder="Ej: 1/2026"
-                                value={form.gestion}
-                                onChange={handleChange}
-                                className={`${inputClass} ${errors.gestion ? "border-red-500 ring-1 ring-red-400" : ""}`}
-                            />
-                            {errors.gestion && <p className={errorClass}>⚠ {errors.gestion}</p>}
-                        </div>
+                            <motion.div animate={errors.gestion ? "shake" : undefined} variants={shake}>
+                                <input
+                                    name="gestion"
+                                    placeholder="Ej: 1/2026"
+                                    value={form.gestion}
+                                    onChange={handleChange}
+                                    className={`${inputClass} ${errors.gestion ? "border-red-500 ring-1 ring-red-400" : ""}`}
+                                />
+                            </motion.div>
+                            <AnimatePresence mode="wait">
+                                {errors.gestion && (
+                                    <motion.p
+                                        key="err-gestion"
+                                        className={errorClass}
+                                        initial={{ opacity: 0, y: -4 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0 }}
+                                    >⚠ {errors.gestion}</motion.p>
+                                )}
+                            </AnimatePresence>
+                        </motion.div>
                     </div>
 
                     {/* Motivo del caso especial (opcional) */}
-                    <div>
+                    <motion.div variants={fieldUp}>
                         <label className={labelClass}>Motivo del caso especial (opcional)</label>
                         <textarea
                             name="motivo"
                             rows={3}
                             placeholder="Ej: Necesito adelantar materias para nivelar mi avance curricular..."
                             value={form.motivo}
-                            onChange={handleChange as any}
+                            onChange={handleChange}
                             className={`${inputClass} resize-none`}
                         />
-                    </div>
+                    </motion.div>
 
                     <div className="border-t border-gray-100 pt-1" />
 
                     {/* Botón */}
-                    <button
+                    <motion.button
                         type="submit"
-                        className="w-full bg-blue-800 hover:bg-blue-900 active:scale-[0.99] text-white font-semibold py-3 rounded-md text-sm transition-all flex items-center justify-center gap-2"
+                        variants={fieldUp}
+                        whileHover={{ scale: 1.015 }}
+                        whileTap={{ scale: 0.97 }}
+                        transition={{ type: "spring", stiffness: 380, damping: 22 }}
+                        className="w-full bg-blue-800 hover:bg-blue-900 text-white font-semibold py-3 rounded-md text-sm flex items-center justify-center gap-2"
                     >
                         Continuar — Seleccionar Materias
-                        <span>→</span>
-                    </button>
-                </form>
+                        <motion.span
+                            aria-hidden
+                            animate={{ x: [0, 4, 0] }}
+                            transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+                        >→</motion.span>
+                    </motion.button>
+                </motion.form>
 
-                <p className="text-center text-white text-xs mt-4">
+                <motion.p variants={fieldUp} className="text-center text-white text-xs mt-4">
                     🔒 Tus datos solo se usan para generar la carta — nada se envía a ningún servidor.
-                </p>
-            </div>
-        </div>
+                </motion.p>
+            </motion.div>
+        </motion.div>
     );
 }

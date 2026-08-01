@@ -2,8 +2,11 @@
 
 import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
+import { motion, AnimatePresence } from "motion/react"
 import { useCasoEspecial } from "@/lib/store"
 import { mallas, Materia, Semestre } from "@/data/mallas"
+import { containerStagger, fadeUp } from "@/components/motion"
+import DownloadButton from "@/components/DownloadButton"
 
 /* =========================
    CONFIG CARRERAS
@@ -38,8 +41,7 @@ const ESTADO_BG: Record<string, string> = { aprobada: "#fde047", inscrita: "#86e
 const ESTADO_BORDER: Record<string, string> = { aprobada: "#ca8a04", inscrita: "#16a34a", caso: "#dc2626", pendiente: "#d1d5db" }
 const ESTADO_TEXT: Record<string, string> = { aprobada: "#713f12", inscrita: "#14532d", caso: "#7f1d1d", pendiente: "#6b7280" }
 
-/* ── Genera HTML de la carta (para PDF) ──
-   Intentamos replicar lo más fiel posible el formato del modelo en Word */
+/* ── Genera HTML de la carta (para PDF) ── */
 function generarHTMLCarta(datos: any, carreraInfo: any, materiasCaso: any[], fechaLarga: string, totalInscritas: number): string {
     const totalFilas = Math.max(3, materiasCaso.length)
     const filasTabla = Array.from({ length: totalFilas }).map((_, i) => {
@@ -55,27 +57,22 @@ function generarHTMLCarta(datos: any, carreraInfo: any, materiasCaso: any[], fec
 
     return `
     <div style="font-family:'Times New Roman',serif;font-size:11pt;line-height:1.5;color:#000;max-width:700px;margin:0 auto;">
-        <!-- Encabezado de fecha (sin subrayados) -->
         <p style="text-align:right;margin:0 0 24px 0;">
             Santa Cruz, ${fechaLarga}
         </p>
 
-        <!-- Destinatario -->
         <p style="margin:0 0 2px 0;">Señor</p>
         <p style="margin:0 0 2px 0;">${carreraInfo.director}</p>
         <p style="margin:0 0 2px 0;">DIRECTOR DE CARRERA – ${carreraInfo.nombre}</p>
         <p style="margin:0 0 14px 0;">F.I.C.C.T.- U.A.G.R.M.</p>
         <p style="margin:0 0 18px 0;">Presente:</p>
 
-        <!-- Referencia -->
         <p style="text-align:center;font-weight:bold;margin:0 0 18px 0;">
             Ref.: SOLICITUD DE CASO ESPECIAL
         </p>
 
-        <!-- Saludo -->
         <p style="margin:0 0 12px 0;">Distinguido Director:</p>
 
-        <!-- Cuerpo principal, siguiendo el modelo -->
         <p style="text-align:justify;margin:0 0 12px 0;">
             Mediante la presente, tengo a bien dirigirme a su autoridad para solicitar mi adición de materias
             a través de caso especial, puesto que tengo inscritas ${totalInscritas} asignaturas y necesito
@@ -83,17 +80,14 @@ function generarHTMLCarta(datos: any, carreraInfo: any, materiasCaso: any[], fec
             en la presente gestión ${datos.gestion}. Para tal efecto, detallo a continuación las materias que solicito que sean adicionadas como caso especial:
         </p>
 
-        <!-- PPA -->
         <p style="margin:16px 0 10px 0;">
             TENGO UN PPA: ${datos.ppa}
         </p>
 
-        <!-- Texto previo a la tabla -->
         <p style="margin:8px 0 10px 0;">
             Materias a inscribir en el semestre ${datos.gestion} por caso especial
         </p>
 
-        <!-- Tabla de materias -->
         <table style="width:100%;border-collapse:collapse;margin:0 0 24px 0;font-size:11pt;">
             <thead>
                 <tr>
@@ -108,12 +102,10 @@ function generarHTMLCarta(datos: any, carreraInfo: any, materiasCaso: any[], fec
             </tbody>
         </table>
 
-        <!-- Cierre -->
         <p style="margin:0 0 60px 0;">
             Sin otro particular me despido con un saludo a usted atentamente:
         </p>
 
-        <!-- Firma y datos del estudiante -->
         <div style="text-align:center;margin:0 0 16px 0;">
             <div style="border-top:1px solid #000;width:220px;margin:0 auto 8px auto;"></div>
         </div>
@@ -124,7 +116,6 @@ function generarHTMLCarta(datos: any, carreraInfo: any, materiasCaso: any[], fec
             <p style="margin:0 0 4px 0;">Cel.: ${datos.celular || ""}</p>
         </div>
 
-        <!-- Notas al pie -->
         <div style="font-size:9pt;margin-top:8px;">
             <p style="margin:0 0 4px 0;">Adjuntar en otra hoja:</p>
             <p style="margin:0 0 2px 0;">a) Boleta de inscripción actual</p>
@@ -150,7 +141,7 @@ function generarHTMLMalla(datos: any, carreraInfo: any, semestres: Semestre[], e
             const bg = ESTADO_BG[estado]
             const border = ESTADO_BORDER[estado]
             const text = ESTADO_TEXT[estado]
-            const grupo = "" // No mostramos el grupo en la malla descargada
+            const grupo = ""
             return `
                 <td style="border:1px solid #e5e7eb;padding:4px;vertical-align:top;">
                     <div style="background:${bg};border:1px solid ${border};border-radius:4px;padding:4px 5px;min-height:42px;">
@@ -194,7 +185,7 @@ function generarHTMLMalla(datos: any, carreraInfo: any, semestres: Semestre[], e
 
         <div style="display:flex;justify-content:center;gap:16px;margin-top:8px;flex-wrap:wrap;font-size:7.5pt;">
             ${Object.entries({ aprobada: "Aprobada", inscrita: "Inscrita", caso: "Caso Especial", pendiente: "Pendiente" }).map(([k, v]) =>
-        `<div style="display:flex;align-items:center;gap:4px;">
+        `<div style="display:flex; align-items:center;gap:4px;">
                     <div style="width:11px;height:11px;background:${ESTADO_BG[k]};border:1px solid ${ESTADO_BORDER[k]};border-radius:2px;"></div>
                     <span style="color:#374151;">${v}</span>
                 </div>`
@@ -238,19 +229,19 @@ export default function DescargaPage() {
     const fechaLarga = hoy.toLocaleDateString("es-BO", { day: "numeric", month: "long", year: "numeric" })
 
     /* ── Descarga PDF usando jsPDF + html2canvas ── */
+    const lastRequest = useRef(0)
     const descargarPDF = async (htmlContent: string, nombreArchivo: string, landscape = false) => {
-        // Importar dinámicamente para evitar SSR issues
+        const req = ++lastRequest.current
         const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
             import("jspdf"),
             import("html2canvas"),
         ])
 
-        // Crear elemento temporal
         const container = document.createElement("div")
         container.style.position = "fixed"
         container.style.left = "-9999px"
         container.style.top = "0"
-        container.style.width = landscape ? "1056px" : "816px" // Letter: 8.5in × 11in @ 96dpi
+        container.style.width = landscape ? "1056px" : "816px"
         container.style.background = "#ffffff"
         container.style.padding = landscape ? "28px 32px" : "56px 72px"
         container.style.boxSizing = "border-box"
@@ -264,6 +255,9 @@ export default function DescargaPage() {
                 backgroundColor: "#ffffff",
                 logging: false,
             })
+
+            // Si llegó un request más nuevo, abortamos
+            if (req !== lastRequest.current) return
 
             const imgData = canvas.toDataURL("image/png")
             const pdf = new jsPDF({
@@ -281,7 +275,6 @@ export default function DescargaPage() {
             if (imgH <= pageH) {
                 pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH)
             } else {
-                // Si no entra, escala para que entre en 1 página
                 const scaledH = pageH
                 const scaledW = pageH / ratio
                 const xOffset = (pageW - scaledW) / 2
@@ -301,7 +294,7 @@ export default function DescargaPage() {
 
     const handleDescargarMalla = async () => {
         const html = generarHTMLMalla(datos, carreraInfo, semestres, estadoMaterias, gruposMaterias, fechaLarga)
-        await descargarPDF(html, `malla-${datos.carrera.toLowerCase()}-${datos.registro || "malla"}.pdf`, true)
+        await descargarPDF(html, `malla-${datos.carrera.toLowerCase().replace(/\s+/g, "-")}-${datos.registro || "malla"}.pdf`, true)
     }
 
     const nuevaSolicitud = () => {
@@ -310,60 +303,100 @@ export default function DescargaPage() {
     }
 
     return (
-        <div style={{ minHeight: "100vh", padding: "32px 16px", fontFamily: "sans-serif" }}>
-            <div style={{ maxWidth: 700, margin: "0 auto" }}>
-
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+            style={{ minHeight: "100vh", padding: "32px 16px", fontFamily: "sans-serif" }}
+        >
+            <motion.div
+                variants={containerStagger}
+                initial="hidden"
+                animate="show"
+                style={{ maxWidth: 700, margin: "0 auto" }}
+            >
                 {/* ── BADGE + TÍTULO ── */}
-                <div style={{ marginBottom: 24 }}>
-                    <div style={{
-                        display: "inline-block",
-                        background: "#1d4ed8", color: "#fff",
-                        fontSize: 11, fontWeight: 700,
-                        padding: "4px 10px", borderRadius: 6,
-                        letterSpacing: 0.5, marginBottom: 10,
-                    }}>
+                <motion.div variants={fadeUp} style={{ marginBottom: 24 }}>
+                    <motion.div
+                        variants={fadeUp}
+                        style={{
+                            display: "inline-block",
+                            background: "#1d4ed8", color: "#fff",
+                            fontSize: 11, fontWeight: 700,
+                            padding: "4px 10px", borderRadius: 6,
+                            letterSpacing: 0.5, marginBottom: 10,
+                        }}
+                    >
                         FICCT — U.A.G.R.M.
-                    </div>
-                    <h1 style={{ fontSize: 28, fontWeight: 800, color: "#111827", margin: "0 0 4px 0", lineHeight: 1.2 }}>
-                        Descargar <span style={{ color: "#dc2626" }}>Documentos</span>
-                    </h1>
-                    <p style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>
+                    </motion.div>
+                    <motion.h1
+                        variants={fadeUp}
+                        style={{ fontSize: 28, fontWeight: 800, color: "#111827", margin: "0 0 4px 0", lineHeight: 1.2 }}
+                    >
+                        Descargar{" "}
+                        <motion.span
+                            style={{ color: "#dc2626", display: "inline-block" }}
+                            animate={{ scale: [1, 1.04, 1] }}
+                            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                            Documentos
+                        </motion.span>
+                    </motion.h1>
+                    <motion.p variants={fadeUp} style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>
                         Paso 4 de 4 — Descargá los documentos generados
-                    </p>
-                </div>
+                    </motion.p>
+                </motion.div>
 
                 {/* ── BARRA DE PROGRESO ── */}
-                <div style={{ display: "flex", gap: 0, marginBottom: 28 }}>
+                <motion.div variants={fadeUp} style={{ display: "flex", gap: 0, marginBottom: 28 }}>
                     {PASOS.map((paso, i) => (
-                        <div key={paso} style={{ flex: 1, textAlign: "center" }}>
-                            <div style={{
-                                height: 3, borderRadius: 2,
-                                background: "#dc2626",
-                                marginBottom: 6,
-                            }} />
-                            <span style={{
-                                fontSize: 12, fontWeight: i === 3 ? 700 : 400,
-                                color: i === 3 ? "#dc2626" : "#374151",
-                            }}>
+                        <div key={paso} style={{ flex: 1, textAlign: "center", position: "relative" }}>
+                            <motion.div
+                                initial={{ scaleX: 0 }}
+                                animate={{ scaleX: 1, background: "#dc2626" }}
+                                transition={{ duration: 0.5, delay: i * 0.08 }}
+                                style={{ height: 3, borderRadius: 2, marginBottom: 6, originX: 0 }}
+                            />
+                            <motion.span
+                                animate={{
+                                    color: i === 3 ? "#dc2626" : "#374151",
+                                    scale: i === 3 ? 1.05 : 1,
+                                }}
+                                transition={{ duration: 0.3 }}
+                                style={{
+                                    fontSize: 12, fontWeight: i === 3 ? 700 : 400, display: "inline-block",
+                                }}
+                            >
                                 {paso}
-                            </span>
+                            </motion.span>
                         </div>
                     ))}
-                </div>
+                </motion.div>
 
                 {/* ── RESUMEN ── */}
-                <div style={{
-                    background: "#fff", borderRadius: 12,
-                    border: "1px solid #e5e7eb",
-                    boxShadow: "0 1px 6px rgba(0,0,0,0.06)",
-                    padding: "24px", marginBottom: 16,
-                }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>
+                <motion.div
+                    variants={fadeUp}
+                    style={{
+                        background: "#fff", borderRadius: 12,
+                        border: "1px solid #e5e7eb",
+                        boxShadow: "0 1px 6px rgba(0,0,0,0.06)",
+                        padding: "24px", marginBottom: 16,
+                    }}
+                >
+                    <motion.div
+                        variants={fadeUp}
+                        style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}
+                    >
                         Resumen de la solicitud
-                    </div>
+                    </motion.div>
 
                     {/* Grid info estudiante */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 24px", marginBottom: 20 }}>
+                    <motion.div
+                        variants={containerStagger}
+                        initial="hidden"
+                        animate="show"
+                        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 24px", marginBottom: 20 }}
+                    >
                         {[
                             { label: "Estudiante", value: datos.nombre },
                             { label: "Registro", value: datos.registro },
@@ -372,7 +405,12 @@ export default function DescargaPage() {
                             { label: "Celular", value: datos.celular || "—" },
                             { label: "C.I.", value: datos.ci },
                         ].map(item => (
-                            <div key={item.label}>
+                            <motion.div
+                                key={item.label}
+                                variants={fadeUp}
+                                whileHover={{ x: 2 }}
+                                transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                            >
                                 <div style={{ fontSize: 11, color: "#9ca3af" }}>{item.label}</div>
                                 <div style={{
                                     fontSize: item.highlight ? 22 : 14,
@@ -381,24 +419,40 @@ export default function DescargaPage() {
                                 }}>
                                     {item.value}
                                 </div>
-                            </div>
+                            </motion.div>
                         ))}
-                    </div>
+                    </motion.div>
 
                     {/* Materias caso especial */}
-                    <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: 16 }}>
-                        <div style={{
-                            display: "flex", alignItems: "center", gap: 8,
-                            marginBottom: 12,
-                        }}>
-                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#dc2626" }} />
+                    <motion.div
+                        variants={fadeUp}
+                        style={{ borderTop: "1px solid #f3f4f6", paddingTop: 16 }}
+                    >
+                        <motion.div
+                            variants={fadeUp}
+                            style={{
+                                display: "flex", alignItems: "center", gap: 8,
+                                marginBottom: 12,
+                            }}
+                        >
+                            <motion.div
+                                animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
+                                transition={{ duration: 1.8, repeat: Infinity }}
+                                style={{ width: 8, height: 8, borderRadius: "50%", background: "#dc2626" }}
+                            />
                             <span style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: 1 }}>
                                 Materias — Caso Especial
                             </span>
-                        </div>
+                        </motion.div>
 
                         {materiasCaso.length === 0 ? (
-                            <p style={{ color: "#9ca3af", fontSize: 13 }}>No hay materias marcadas como caso especial.</p>
+                            <motion.p
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                style={{ color: "#9ca3af", fontSize: 13 }}
+                            >
+                                No hay materias marcadas como caso especial.
+                            </motion.p>
                         ) : (
                             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                                 <thead>
@@ -410,57 +464,58 @@ export default function DescargaPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {materiasCaso.map((m, i) => (
-                                        <tr key={m.sigla} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                                            <td style={{ padding: "8px 10px", color: "#6b7280" }}>{i + 1}</td>
-                                            <td style={{ padding: "8px 10px", color: "#111827", fontWeight: 500 }}>{m.nombre}</td>
-                                            <td style={{ padding: "8px 10px", color: "#1d4ed8", fontFamily: "monospace", fontWeight: 700 }}>{m.sigla}</td>
-                                            <td style={{ padding: "8px 10px", color: "#dc2626", fontWeight: 700 }}>{m.grupo}</td>
-                                        </tr>
-                                    ))}
+                                    <AnimatePresence initial={false}>
+                                        {materiasCaso.map((m, i) => (
+                                            <motion.tr
+                                                key={m.sigla}
+                                                layout
+                                                initial={{ opacity: 0, x: -16 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: 16 }}
+                                                transition={{ delay: i * 0.04, type: "spring", stiffness: 280, damping: 24 }}
+                                                style={{ borderBottom: "1px solid #f3f4f6" }}
+                                            >
+                                                <td style={{ padding: "8px 10px", color: "#6b7280" }}>{i + 1}</td>
+                                                <td style={{ padding: "8px 10px", color: "#111827", fontWeight: 500 }}>{m.nombre}</td>
+                                                <td style={{ padding: "8px 10px", color: "#1d4ed8", fontFamily: "monospace", fontWeight: 700 }}>{m.sigla}</td>
+                                                <td style={{ padding: "8px 10px", color: "#dc2626", fontWeight: 700 }}>{m.grupo}</td>
+                                            </motion.tr>
+                                        ))}
+                                    </AnimatePresence>
                                 </tbody>
                             </table>
                         )}
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
 
                 {/* ── BOTONES DE DESCARGA ── */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
-                    <button
-                        onClick={handleDescargarCarta}
-                        style={{
-                            width: "100%", padding: "16px 0",
-                            borderRadius: 8, background: "#1d4ed8",
-                            border: "none", color: "#fff",
-                            fontWeight: 700, fontSize: 15,
-                            cursor: "pointer", fontFamily: "sans-serif",
-                            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "#1e40af")}
-                        onMouseLeave={e => (e.currentTarget.style.background = "#1d4ed8")}
-                    >
-                        <span style={{ fontSize: 20 }}>📄</span>
-                        Descargar Carta de Solicitud (PDF)
-                    </button>
+                <motion.div
+                    variants={containerStagger}
+                    initial="hidden"
+                    animate="show"
+                    style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}
+                >
+                    <motion.div variants={fadeUp}>
+                        <DownloadButton
+                            onDownload={handleDescargarCarta}
+                            color="#1d4ed8"
+                            icon="📄"
+                            label="Descargar Carta de Solicitud (PDF)"
+                        />
+                    </motion.div>
+                    <motion.div variants={fadeUp}>
+                        <DownloadButton
+                            onDownload={handleDescargarMalla}
+                            color="#15803d"
+                            icon="📊"
+                            label="Descargar Malla Curricular (PDF)"
+                        />
+                    </motion.div>
 
-                    <button
-                        onClick={handleDescargarMalla}
-                        style={{
-                            width: "100%", padding: "16px 0",
-                            borderRadius: 8, background: "#15803d",
-                            border: "none", color: "#fff",
-                            fontWeight: 700, fontSize: 15,
-                            cursor: "pointer", fontFamily: "sans-serif",
-                            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "#166534")}
-                        onMouseLeave={e => (e.currentTarget.style.background = "#15803d")}
-                    >
-                        <span style={{ fontSize: 20 }}>📊</span>
-                        Descargar Malla Curricular (PDF)
-                    </button>
-
-                    <button
+                    <motion.button
+                        variants={fadeUp}
+                        whileHover={{ scale: 1.015, backgroundColor: "#f9fafb" }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={() => router.push("/carta")}
                         style={{
                             width: "100%", padding: "12px 0",
@@ -469,13 +524,14 @@ export default function DescargaPage() {
                             fontWeight: 600, fontSize: 13,
                             cursor: "pointer", fontFamily: "sans-serif",
                         }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "#f9fafb")}
-                        onMouseLeave={e => (e.currentTarget.style.background = "#fff")}
                     >
                         👁 Volver a ver la carta
-                    </button>
+                    </motion.button>
 
-                    <button
+                    <motion.button
+                        variants={fadeUp}
+                        whileHover={{ scale: 1.015, color: "#374151", borderColor: "#d1d5db" }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={nuevaSolicitud}
                         style={{
                             width: "100%", padding: "12px 0",
@@ -483,18 +539,17 @@ export default function DescargaPage() {
                             border: "1px solid #e5e7eb", color: "#9ca3af",
                             fontWeight: 600, fontSize: 13,
                             cursor: "pointer", fontFamily: "sans-serif",
+                            transition: "color 0.2s, border-color 0.2s",
                         }}
-                        onMouseEnter={e => (e.currentTarget.style.color = "#374151")}
-                        onMouseLeave={e => (e.currentTarget.style.color = "#9ca3af")}
                     >
                         🔄 Nueva Solicitud
-                    </button>
-                </div>
+                    </motion.button>
+                </motion.div>
 
-                <p style={{ textAlign: "center", fontSize: 12, color: "#ffffff" }}>
+                <motion.p variants={fadeUp} style={{ textAlign: "center", fontSize: 12, color: "#ffffff" }}>
                     🔒 Los documentos se generan en tu navegador — nada se envía a ningún servidor.
-                </p>
-            </div>
-        </div>
+                </motion.p>
+            </motion.div>
+        </motion.div>
     )
 }

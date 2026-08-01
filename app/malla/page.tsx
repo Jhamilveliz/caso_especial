@@ -1,9 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
+import { motion, AnimatePresence, LayoutGroup } from "motion/react"
 import { useCasoEspecial, EstadoMateria } from "@/lib/store"
 import { mallas, Semestre, Materia } from "@/data/mallas"
+import { containerStagger, fadeUp } from "@/components/motion"
 
 /* =========================================================
    HELPERS
@@ -78,23 +80,32 @@ function MateriaCard({
     const esCaso = estado === "caso"
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <button
+        <motion.div
+            variants={fadeUp}
+            style={{ display: "flex", flexDirection: "column", gap: 4 }}
+        >
+            <motion.button
                 onClick={onClick}
+                layout
+                whileHover={{ y: -2, boxShadow: "0 6px 18px rgba(0,0,0,0.16)" }}
+                whileTap={{ scale: 0.94 }}
+                transition={{ type: "spring", stiffness: 380, damping: 26 }}
+                animate={{
+                    backgroundColor: cfg.bg,
+                    borderColor: cfg.border,
+                    boxShadow: esCaso
+                        ? "0 0 0 2px rgba(220,38,38,0.5)"
+                        : "0 1px 2px rgba(0,0,0,0.06)",
+                }}
                 style={{
                     width: "100%",
-                    background: cfg.bg,
                     border: `1px solid ${cfg.border}`,
                     borderRadius: 6,
                     padding: "7px 8px",
                     textAlign: "left",
                     cursor: "pointer",
-                    transition: "box-shadow 0.12s",
                     minHeight: 60,
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
                 }}
-                onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 3px 10px rgba(0,0,0,0.12)")}
-                onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.06)")}
             >
                 <div style={{
                     fontWeight: 700, fontSize: 10,
@@ -106,41 +117,50 @@ function MateriaCard({
                 </div>
                 <div style={{
                     fontSize: 8, color: cfg.text,
-                    lineHeight: 1.3, opacity: 0.8,
+                    lineHeight: 1.3, opacity: 0.85,
                     fontFamily: "sans-serif",
                 }}>
                     {mat.nombre}
                 </div>
-            </button>
+            </motion.button>
 
             {/* Input grupo siempre visible si es caso especial */}
-            {esCaso && (
-                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <span style={{
-                        fontSize: 8, fontFamily: "sans-serif",
-                        fontWeight: 600, color: "#dc2626", whiteSpace: "nowrap",
-                    }}>
-                        Grupo:
-                    </span>
-                    <input
-                        type="text"
-                        placeholder="Nº"
-                        value={grupo}
-                        onChange={e => onGrupoChange(e.target.value)}
-                        onClick={e => e.stopPropagation()}
-                        style={{
-                            flex: 1, fontSize: 9,
-                            border: "1px solid #dc2626",
-                            borderRadius: 4, padding: "2px 6px",
-                            outline: "none", background: "#fff",
-                            fontFamily: "sans-serif", color: "#7f1d1d", fontWeight: 600,
-                        }}
-                        onFocus={e => (e.currentTarget.style.boxShadow = "0 0 0 2px rgba(220,38,38,0.2)")}
-                        onBlur={e => (e.currentTarget.style.boxShadow = "none")}
-                    />
-                </div>
-            )}
-        </div>
+            <AnimatePresence initial={false}>
+                {esCaso && (
+                    <motion.div
+                        key="grupo-input"
+                        initial={{ opacity: 0, height: 0, y: -4 }}
+                        animate={{ opacity: 1, height: "auto", y: 0 }}
+                        exit={{ opacity: 0, height: 0, y: -4 }}
+                        transition={{ type: "spring", stiffness: 350, damping: 26 }}
+                        style={{ display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}
+                    >
+                        <span style={{
+                            fontSize: 8, fontFamily: "sans-serif",
+                            fontWeight: 600, color: "#dc2626", whiteSpace: "nowrap",
+                        }}>
+                            Grupo:
+                        </span>
+                        <input
+                            type="text"
+                            placeholder="Nº"
+                            value={grupo}
+                            onChange={e => onGrupoChange(e.target.value)}
+                            onClick={e => e.stopPropagation()}
+                            style={{
+                                flex: 1, fontSize: 9,
+                                border: "1px solid #dc2626",
+                                borderRadius: 4, padding: "2px 6px",
+                                outline: "none", background: "#fff",
+                                fontFamily: "sans-serif", color: "#7f1d1d", fontWeight: 600,
+                            }}
+                            onFocus={e => (e.currentTarget.style.boxShadow = "0 0 0 2px rgba(220,38,38,0.2)")}
+                            onBlur={e => (e.currentTarget.style.boxShadow = "none")}
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.div>
     )
 }
 
@@ -158,9 +178,12 @@ export default function MallaPage() {
         if (!datos.nombre.trim()) router.replace("/datos")
     }, [datos.nombre, router])
 
-    const semestres = getSemestres(datos.carrera)
+    const semestres = useMemo(() => getSemestres(datos.carrera), [datos.carrera])
     const casoCount = Object.values(estadoMaterias).filter(e => e === "caso").length
-    const semestresOrdenados = [...semestres].sort((a, b) => b.semestre - a.semestre)
+    const semestresOrdenados = useMemo(
+        () => [...semestres].sort((a, b) => b.semestre - a.semestre),
+        [semestres]
+    )
     const maxMaterias = Math.max(...semestres.map(s => s.materias.length), 1)
 
     const getEstado = (sigla: string): EstadoMateria => estadoMaterias[sigla] ?? "pendiente"
@@ -189,160 +212,244 @@ export default function MallaPage() {
 
     if (semestres.length === 0) {
         return (
-            <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+            <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.35 }}
+                style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+            >
                 <div style={{ background: "#fff", borderRadius: 12, padding: 32, maxWidth: 360, textAlign: "center", border: "1px solid #e5e7eb" }}>
                     <h2 style={{ fontWeight: 700, color: "#dc2626", marginBottom: 8, fontFamily: "sans-serif" }}>Malla no encontrada</h2>
                     <p style={{ color: "#6b7280", marginBottom: 16, fontSize: 14, fontFamily: "sans-serif" }}>Carrera: <strong>{datos.carrera}</strong></p>
-                    <button onClick={() => router.push("/datos")}
-                        style={{ background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700, cursor: "pointer", fontFamily: "sans-serif" }}>
+                    <motion.button
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => router.push("/datos")}
+                        style={{ background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700, cursor: "pointer", fontFamily: "sans-serif" }}
+                    >
                         Volver a Datos
-                    </button>
+                    </motion.button>
                 </div>
-            </div>
+            </motion.div>
         )
     }
 
     return (
-        <div style={{ minHeight: "100vh", padding: "32px 16px", fontFamily: "sans-serif" }}>
-            <div style={{ maxWidth: 900, margin: "0 auto" }}>
-
-                {/* ── BADGE + TÍTULO ── igual a las otras páginas */}
-                <div style={{ marginBottom: 24 }}>
-                    <div style={{
-                        display: "inline-block",
-                        background: "#1d4ed8", color: "#fff",
-                        fontSize: 11, fontWeight: 700,
-                        padding: "4px 10px", borderRadius: 6,
-                        letterSpacing: 0.5, marginBottom: 10,
-                    }}>
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.35 }}
+            style={{ minHeight: "100vh", padding: "32px 16px", fontFamily: "sans-serif" }}
+        >
+            <motion.div
+                variants={containerStagger}
+                initial="hidden"
+                animate="show"
+                style={{ maxWidth: 900, margin: "0 auto" }}
+            >
+                {/* ── BADGE + TÍTULO ── */}
+                <motion.div variants={fadeUp} style={{ marginBottom: 24 }}>
+                    <motion.div
+                        variants={fadeUp}
+                        style={{
+                            display: "inline-block",
+                            background: "#1d4ed8", color: "#fff",
+                            fontSize: 11, fontWeight: 700,
+                            padding: "4px 10px", borderRadius: 6,
+                            letterSpacing: 0.5, marginBottom: 10,
+                        }}
+                    >
                         FICCT — U.A.G.R.M.
-                    </div>
-                    <h1 style={{ fontSize: 28, fontWeight: 800, color: "#111827", margin: "0 0 4px 0", lineHeight: 1.2 }}>
-                        Seleccioná tu <span style={{ color: "#dc2626" }}>Malla</span>
-                    </h1>
-                    <p style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>
+                    </motion.div>
+                    <motion.h1
+                        variants={fadeUp}
+                        style={{ fontSize: 28, fontWeight: 800, color: "#111827", margin: "0 0 4px 0", lineHeight: 1.2 }}
+                    >
+                        Seleccioná tu <motion.span
+                            style={{ color: "#dc2626", display: "inline-block" }}
+                            animate={{ scale: [1, 1.04, 1] }}
+                            transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+                        >Malla</motion.span>
+                    </motion.h1>
+                    <motion.p variants={fadeUp} style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>
                         Paso 2 de 4 — Marcá tus materias según su estado
-                    </p>
-                </div>
+                    </motion.p>
+                </motion.div>
 
-                {/* ── BARRA DE PROGRESO ── igual a las otras páginas */}
-                <div style={{ display: "flex", gap: 0, marginBottom: 28 }}>
+                {/* ── BARRA DE PROGRESO ── */}
+                <motion.div variants={fadeUp} style={{ display: "flex", gap: 0, marginBottom: 28 }}>
                     {["Datos", "Malla", "Carta", "Descarga"].map((step, i) => {
                         const done = i < 1
                         const active = i === 1
                         return (
-                            <div key={step} style={{ flex: 1, textAlign: "center" }}>
-                                <div style={{
-                                    height: 3, borderRadius: 2,
-                                    background: done || active ? "#dc2626" : "#e5e7eb",
-                                    marginBottom: 6,
-                                }} />
-                                <span style={{
-                                    fontSize: 12, fontWeight: active ? 700 : 400,
-                                    color: active ? "#dc2626" : done ? "#374151" : "#9ca3af",
-                                }}>
+                            <div key={step} style={{ flex: 1, textAlign: "center", position: "relative" }}>
+                                <motion.div
+                                    animate={{
+                                        background: done || active ? "#dc2626" : "#e5e7eb",
+                                        scaleX: active ? 1 : done ? 1 : 0.6,
+                                    }}
+                                    initial={{ scaleX: 0 }}
+                                    transition={{ duration: 0.5, delay: i * 0.08 }}
+                                    style={{ height: 3, borderRadius: 2, marginBottom: 6, originX: 0 }}
+                                />
+                                <motion.span
+                                    animate={{
+                                        color: active ? "#dc2626" : done ? "#374151" : "#9ca3af",
+                                        scale: active ? 1.05 : 1,
+                                    }}
+                                    transition={{ duration: 0.3 }}
+                                    style={{
+                                        fontSize: 12, fontWeight: active ? 700 : 400, display: "inline-block",
+                                    }}
+                                >
                                     {step}
-                                </span>
+                                </motion.span>
                             </div>
                         )
                     })}
-                </div>
+                </motion.div>
 
                 {/* ── CARD PRINCIPAL ── */}
-                <div style={{
-                    background: "#fff",
-                    borderRadius: 12,
-                    border: "1px solid #e5e7eb",
-                    boxShadow: "0 1px 6px rgba(0,0,0,0.06)",
-                    overflow: "hidden",
-                    marginBottom: 16,
-                }}>
+                <motion.div
+                    variants={fadeUp}
+                    style={{
+                        background: "#fff",
+                        borderRadius: 12,
+                        border: "1px solid #e5e7eb",
+                        boxShadow: "0 1px 6px rgba(0,0,0,0.06)",
+                        overflow: "hidden",
+                        marginBottom: 16,
+                    }}
+                >
                     {/* Cabecera de la card con info de carrera */}
-                    <div style={{
-                        padding: "16px 20px",
-                        borderBottom: "1px solid #e5e7eb",
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                        flexWrap: "wrap", gap: 10,
-                    }}>
-                        <div>
+                    <motion.div
+                        variants={fadeUp}
+                        style={{
+                            padding: "16px 20px",
+                            borderBottom: "1px solid #e5e7eb",
+                            display: "flex", alignItems: "center", justifyContent: "space-between",
+                            flexWrap: "wrap", gap: 10,
+                        }}
+                    >
+                        <motion.div variants={fadeUp}>
                             <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>
                                 Malla Curricular · Plan {getPlanCode(datos.carrera)}
                             </div>
                             <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>
                                 {getNombreCarrera(datos.carrera)}
                             </div>
-                        </div>
+                        </motion.div>
 
-                        {/* Selector de modo */}
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                            <span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, marginRight: 2 }}>Marcar:</span>
-                            {(["caso", "inscrita", "aprobada", "pendiente"] as EstadoMateria[]).map(m => {
-                                const cfg = ESTADO_CFG[m]
-                                const active = modoActivo === m
-                                return (
-                                    <button
-                                        key={m}
-                                        onClick={() => setModoActivo(m)}
-                                        title={cfg.label}
-                                        style={{
-                                            display: "flex", alignItems: "center", gap: 5,
-                                            padding: "4px 10px", borderRadius: 20,
-                                            border: `1.5px solid ${active ? cfg.border : "#e5e7eb"}`,
-                                            background: active ? cfg.bg : "#f9fafb",
-                                            cursor: "pointer", fontSize: 10,
-                                            fontWeight: active ? 700 : 500,
-                                            color: active ? cfg.text : "#9ca3af",
-                                            transition: "all 0.12s",
-                                            fontFamily: "sans-serif",
-                                        }}
-                                    >
-                                        <div style={{ width: 7, height: 7, borderRadius: "50%", background: cfg.border, flexShrink: 0 }} />
-                                        {cfg.label}
-                                    </button>
-                                )
-                            })}
+                        {/* Selector de modo (con layoutId shared underline) */}
+                        <motion.div variants={fadeUp} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <LayoutGroup id="modo-selector">
+                                <span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, marginRight: 2 }}>Marcar:</span>
+                                {(["caso", "inscrita", "aprobada", "pendiente"] as EstadoMateria[]).map(m => {
+                                    const cfg = ESTADO_CFG[m]
+                                    const active = modoActivo === m
+                                    return (
+                                        <motion.button
+                                            key={m}
+                                            onClick={() => setModoActivo(m)}
+                                            whileHover={{ scale: 1.04 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            transition={{ type: "spring", stiffness: 380, damping: 24 }}
+                                            style={{
+                                                position: "relative",
+                                                display: "flex", alignItems: "center", gap: 5,
+                                                padding: "4px 10px", borderRadius: 20,
+                                                border: `1.5px solid ${active ? cfg.border : "#e5e7eb"}`,
+                                                background: active ? cfg.bg : "#f9fafb",
+                                                cursor: "pointer", fontSize: 10,
+                                                fontWeight: active ? 700 : 500,
+                                                color: active ? cfg.text : "#9ca3af",
+                                                fontFamily: "sans-serif",
+                                            }}
+                                        >
+                                            <div style={{ width: 7, height: 7, borderRadius: "50%", background: cfg.border, flexShrink: 0 }} />
+                                            {cfg.label}
+                                            {active && (
+                                                <motion.div
+                                                    layoutId="modo-pill"
+                                                    transition={{ type: "spring", stiffness: 380, damping: 28 }}
+                                                    style={{
+                                                        position: "absolute", inset: -3,
+                                                        borderRadius: 22,
+                                                        border: `2px solid ${cfg.border}`,
+                                                        pointerEvents: "none",
+                                                    }}
+                                                />
+                                            )}
+                                        </motion.button>
+                                    )
+                                })}
+                            </LayoutGroup>
                             {/* Contador casos */}
-                            <div style={{
-                                marginLeft: 6,
-                                background: casoCount > 0 ? "#fca5a5" : "#f3f4f6",
-                                border: `1px solid ${casoCount > 0 ? "#dc2626" : "#e5e7eb"}`,
-                                borderRadius: 20, padding: "4px 12px",
-                                fontSize: 11, color: casoCount > 0 ? "#7f1d1d" : "#9ca3af",
-                                fontWeight: 700,
-                            }}>
+                            <motion.div
+                                key={casoCount}
+                                initial={{ scale: 0.7, opacity: 0 }}
+                                animate={{
+                                    scale: casoCount > 0 ? [1, 1.15, 1] : 1,
+                                    opacity: 1,
+                                }}
+                                transition={{ duration: 0.35 }}
+                                style={{
+                                    marginLeft: 6,
+                                    background: casoCount > 0 ? "#fca5a5" : "#f3f4f6",
+                                    border: `1px solid ${casoCount > 0 ? "#dc2626" : "#e5e7eb"}`,
+                                    borderRadius: 20, padding: "4px 12px",
+                                    fontSize: 11, color: casoCount > 0 ? "#7f1d1d" : "#9ca3af",
+                                    fontWeight: 700,
+                                }}
+                            >
                                 {casoCount} caso{casoCount !== 1 ? "s" : ""}
-                            </div>
-                        </div>
-                    </div>
+                            </motion.div>
+                        </motion.div>
+                    </motion.div>
 
                     {/* Error */}
-                    {error && (
-                        <div style={{
-                            margin: "12px 20px 0",
-                            background: "#fef2f2", border: "1px solid #fca5a5",
-                            color: "#dc2626", borderRadius: 8,
-                            padding: "8px 14px", fontSize: 13, fontWeight: 600,
-                        }}>
-                            ⚠️ {error}
-                        </div>
-                    )}
+                    <AnimatePresence>
+                        {error && (
+                            <motion.div
+                                key="error"
+                                initial={{ opacity: 0, y: -8, height: 0 }}
+                                animate={{ opacity: 1, y: 0, height: "auto" }}
+                                exit={{ opacity: 0, y: -8, height: 0 }}
+                                style={{
+                                    margin: "12px 20px 0",
+                                    background: "#fef2f2", border: "1px solid #fca5a5",
+                                    color: "#dc2626", borderRadius: 8,
+                                    padding: "8px 14px", fontSize: 13, fontWeight: 600,
+                                    overflow: "hidden",
+                                }}
+                            >
+                                ⚠️ {error}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     {/* GRL001 */}
-                    <div style={{
-                        padding: "10px 0",
-                        borderBottom: "1px solid #e5e7eb",
-                        display: "flex", justifyContent: "center",
-                        background: "#f9fafb",
-                    }}>
-                        <div style={{
-                            background: "#fff", border: "1px solid #d1d5db",
-                            borderRadius: 6, padding: "4px 16px",
-                            fontSize: 11, fontWeight: 700, color: "#374151",
-                            boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-                        }}>
+                    <motion.div
+                        variants={fadeUp}
+                        style={{
+                            padding: "10px 0",
+                            borderBottom: "1px solid #e5e7eb",
+                            display: "flex", justifyContent: "center",
+                            background: "#f9fafb",
+                        }}
+                    >
+                        <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            style={{
+                                background: "#fff", border: "1px solid #d1d5db",
+                                borderRadius: 6, padding: "4px 16px",
+                                fontSize: 11, fontWeight: 700, color: "#374151",
+                                boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                            }}
+                        >
                             GRL001 — Modal. de Titulación
-                        </div>
-                    </div>
+                        </motion.div>
+                    </motion.div>
 
                     {/* MALLA */}
                     <div style={{ overflowX: "auto" }}>
@@ -399,21 +506,28 @@ export default function MallaPage() {
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* ── LEYENDA ── */}
-                <div style={{
-                    display: "flex", alignItems: "center", gap: 18,
-                    marginBottom: 16, flexWrap: "wrap",
-                    padding: "10px 16px",
-                    background: "#fff", borderRadius: 8,
-                    border: "1px solid #e5e7eb",
-                }}>
+                <motion.div
+                    variants={fadeUp}
+                    style={{
+                        display: "flex", alignItems: "center", gap: 18,
+                        marginBottom: 16, flexWrap: "wrap",
+                        padding: "10px 16px",
+                        background: "#fff", borderRadius: 8,
+                        border: "1px solid #e5e7eb",
+                    }}
+                >
                     <span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600 }}>Referencia:</span>
                     {(["aprobada", "inscrita", "caso", "pendiente"] as EstadoMateria[]).map(m => {
                         const cfg = ESTADO_CFG[m]
                         return (
-                            <div key={m} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <motion.div
+                                key={m}
+                                whileHover={{ scale: 1.05 }}
+                                style={{ display: "flex", alignItems: "center", gap: 6 }}
+                            >
                                 <div style={{
                                     width: 14, height: 14, borderRadius: 3,
                                     background: cfg.bg, border: `1.5px solid ${cfg.border}`,
@@ -422,14 +536,16 @@ export default function MallaPage() {
                                 <span style={{ fontSize: 11, color: "#374151", fontWeight: 500 }}>
                                     {cfg.label}
                                 </span>
-                            </div>
+                            </motion.div>
                         )
                     })}
-                </div>
+                </motion.div>
 
-                {/* ── BOTONES ── igual estilo al resto de páginas */}
-                <div style={{ display: "flex", gap: 10 }}>
-                    <button
+                {/* ── BOTONES ── */}
+                <motion.div variants={fadeUp} style={{ display: "flex", gap: 10 }}>
+                    <motion.button
+                        whileHover={{ scale: 1.02, backgroundColor: "#f9fafb" }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={() => router.push("/datos")}
                         style={{
                             flex: 1, padding: "14px 0", borderRadius: 8,
@@ -439,8 +555,10 @@ export default function MallaPage() {
                         }}
                     >
                         ← Volver a Datos
-                    </button>
-                    <button
+                    </motion.button>
+                    <motion.button
+                        whileHover={{ scale: 1.02, backgroundColor: "#1e40af" }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={handleContinuar}
                         style={{
                             flex: 2, padding: "14px 0", borderRadius: 8,
@@ -450,18 +568,16 @@ export default function MallaPage() {
                             fontFamily: "sans-serif",
                             letterSpacing: 0.2,
                         }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "#1e40af")}
-                        onMouseLeave={e => (e.currentTarget.style.background = "#1d4ed8")}
                     >
                         Continuar — Ver Carta →
-                    </button>
-                </div>
+                    </motion.button>
+                </motion.div>
 
                 {/* Footer igual al de datos */}
-                <p style={{ textAlign: "center", fontSize: 12, color: "#ffffff", marginTop: 16 }}>
+                <motion.p variants={fadeUp} style={{ textAlign: "center", fontSize: 12, color: "#ffffff", marginTop: 16 }}>
                     🔒 Tus datos solo se usan para generar la carta — nada se envía a ningún servidor.
-                </p>
-            </div>
-        </div>
+                </motion.p>
+            </motion.div>
+        </motion.div>
     )
 }

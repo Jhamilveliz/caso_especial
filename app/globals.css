@@ -3,6 +3,9 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --blob-a: #3b82f6;
+  --blob-b: #8b5cf6;
+  --blob-c: #ef4444;
 }
 
 @theme inline {
@@ -23,4 +26,43 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ── Blobs del fondo ── */
+@keyframes blob-drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(40px, -30px) scale(1.08); }
+  66% { transform: translate(-30px, 25px) scale(0.95); }
+}
+@keyframes blob-drift-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-50px, 40px) scale(1.12); }
+}
+@keyframes blob-drift-c {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, 40px) scale(1.05); }
+  75% { transform: translate(-40px, -20px) scale(0.92); }
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.35;
+  will-change: transform;
+}
+.blob-a { background: var(--blob-a); animation: blob-drift-a 18s ease-in-out infinite; }
+.blob-b { background: var(--blob-b); animation: blob-drift-b 22s ease-in-out infinite; }
+.blob-c { background: var(--blob-c); animation: blob-drift-c 26s ease-in-out infinite; }
+
+/* ── Respeto por reduced-motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .blob {
+    animation: none !important;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

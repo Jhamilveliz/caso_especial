@@ -2,8 +2,10 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { motion, AnimatePresence } from "motion/react"
 import { useCasoEspecial } from "@/lib/store"
 import { mallas } from "@/data/mallas"
+import { containerStagger, fadeUp } from "@/components/motion"
 
 /* =========================
    CONFIG CARRERAS
@@ -27,12 +29,10 @@ export default function CartaPage() {
     const router = useRouter()
     const { datos, estadoMaterias, gruposMaterias } = useCasoEspecial()
 
-    // Proteger ruta
     useEffect(() => {
         if (!datos.nombre.trim()) router.replace("/datos")
     }, [datos.nombre, router])
 
-    // Mapa de carrera → key de mallas
     const mapaCarrera: Record<string, string> = {
         "Informática": "informatica_187_3",
         "Informática 187-6": "informatica_187_6",
@@ -44,7 +44,6 @@ export default function CartaPage() {
     const mallaCarrera = mallaKey ? (mallas as any)[mallaKey] : null
     const semestres = mallaCarrera?.troncal ?? []
 
-    // Recopilar info de las materias caso especial
     const materiasCaso = Object.entries(estadoMaterias)
         .filter(([, e]) => e === "caso")
         .map(([sigla]) => {
@@ -69,10 +68,6 @@ export default function CartaPage() {
         codigo: ""
     }
 
-    // Determinar el semestre del estudiante (esto deberías calcularlo según las materias aprobadas)
-    // Por ahora usamos un valor por defecto
-    const semestreEstudiante = "cuarto semestre"
-
     const hoy = new Date()
     const dia = hoy.getDate()
     const mes = hoy.toLocaleDateString("es-BO", { month: "long" })
@@ -81,63 +76,123 @@ export default function CartaPage() {
     const ciudad = "Santa Cruz"
 
     return (
-        <div className="min-h-screen w-full flex justify-center px-4 md:px-8 py-8">
-            <div className="max-w-4xl w-full mx-auto">
-
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+            className="min-h-screen w-full flex justify-center px-4 md:px-8 py-8"
+        >
+            <motion.div
+                variants={containerStagger}
+                initial="hidden"
+                animate="show"
+                className="max-w-4xl w-full mx-auto"
+            >
                 {/* Header */}
-                <div className="mb-6">
-                    <div className="inline-flex items-center gap-2 bg-blue-800 text-white text-xs font-semibold px-3 py-1 rounded mb-3 tracking-widest uppercase">
+                <motion.div variants={fadeUp} className="mb-6">
+                    <motion.div
+                        variants={fadeUp}
+                        className="inline-flex items-center gap-2 bg-blue-800 text-white text-xs font-semibold px-3 py-1 rounded mb-3 tracking-widest uppercase"
+                    >
                         FICCT — U.A.G.R.M.
-                    </div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                    </motion.div>
+                    <motion.h1 variants={fadeUp} className="text-xl sm:text-2xl font-bold text-gray-900">
                         Vista Previa de la{" "}
-                        <span className="text-red-700">Carta</span>
-                    </h1>
-                    <p className="text-gray-500 text-sm mt-1">
+                        <motion.span
+                            className="text-red-700 inline-block"
+                            animate={{ scale: [1, 1.04, 1] }}
+                            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                            Carta
+                        </motion.span>
+                    </motion.h1>
+                    <motion.p variants={fadeUp} className="text-gray-500 text-sm mt-1">
                         Paso 3 de 4 — Revisá los datos antes de descargar
-                    </p>
-                </div>
+                    </motion.p>
+                </motion.div>
 
                 {/* Indicador de pasos */}
-                <div className="flex gap-2 mb-7">
+                <motion.div variants={fadeUp} className="flex gap-2 mb-7">
                     {PASOS.map((paso, i) => (
-                        <div key={paso} className="flex-1">
-                            <div className={`h-1 rounded-full mb-1 ${i <= 2 ? "bg-red-600" : "bg-gray-200"}`} />
-                            <span className={`text-xs font-medium ${i <= 2 ? "text-red-600" : "text-gray-400"}`}>
+                        <div key={paso} className="flex-1 relative">
+                            <motion.div
+                                initial={{ scaleX: 0 }}
+                                animate={{
+                                    scaleX: 1,
+                                    background: i <= 2 ? "#dc2626" : "#e5e7eb",
+                                }}
+                                transition={{ duration: 0.5, delay: i * 0.08 }}
+                                className="h-1 rounded-full mb-1 origin-left"
+                            />
+                            <motion.span
+                                animate={{
+                                    color: i <= 2 ? "#dc2626" : "#9ca3af",
+                                    scale: i === 2 ? 1.05 : 1,
+                                }}
+                                transition={{ duration: 0.3 }}
+                                className="text-xs font-medium inline-block"
+                            >
                                 {paso}
-                            </span>
+                            </motion.span>
                         </div>
                     ))}
-                </div>
+                </motion.div>
 
                 {/* RESUMEN */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <motion.div
+                    variants={containerStagger}
+                    initial="hidden"
+                    animate="show"
+                    className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"
+                >
                     {[
                         { label: "Estudiante", value: datos.nombre },
                         { label: "Registro", value: datos.registro },
                         { label: "PPA", value: datos.ppa, highlight: true },
                         { label: "Gestión", value: datos.gestion },
                     ].map(item => (
-                        <div key={item.label} className={`rounded-xl p-4 border ${item.highlight
-                            ? "bg-blue-50 border-blue-200"
-                            : "bg-white border-gray-200 shadow-sm"
-                            }`}>
+                        <motion.div
+                            key={item.label}
+                            variants={fadeUp}
+                            whileHover={{ y: -3 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                            className={`rounded-xl p-4 border ${item.highlight
+                                ? "bg-blue-50 border-blue-200"
+                                : "bg-white border-gray-200 shadow-sm"
+                                }`}
+                        >
                             <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">{item.label}</div>
                             <div className={`font-bold text-sm ${item.highlight ? "text-blue-800 text-xl" : "text-gray-900"}`}>
                                 {item.value || "—"}
                             </div>
-                        </div>
+                        </motion.div>
                     ))}
-                </div>
+                </motion.div>
 
                 {/* Materias caso especial */}
-                {/* Tabla de materias caso especial — con scroll horizontal en mobile */}
-                <div className="mb-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    <div className="px-5 py-3 bg-red-50 border-b border-red-200 flex items-center gap-2">
-                        <span className="text-red-700 font-bold text-sm">🔴 Materias — Caso Especial</span>
-                    </div>
+                <motion.div
+                    variants={fadeUp}
+                    className="mb-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+                >
+                    <motion.div
+                        variants={fadeUp}
+                        className="px-5 py-3 bg-red-50 border-b border-red-200 flex items-center gap-2"
+                    >
+                        <motion.span
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                            className="inline-block w-2 h-2 rounded-full bg-red-600"
+                        />
+                        <span className="text-red-700 font-bold text-sm">Materias — Caso Especial</span>
+                    </motion.div>
                     {materiasCaso.length === 0 ? (
-                        <div className="p-5 text-gray-500 text-sm">No hay materias marcadas como caso especial.</div>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="p-5 text-gray-500 text-sm"
+                        >
+                            No hay materias marcadas como caso especial.
+                        </motion.div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm min-w-[400px]">
@@ -150,32 +205,47 @@ export default function CartaPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {materiasCaso.map((m, i) => (
-                                        <tr key={m.sigla} className="border-b border-gray-100 last:border-0">
-                                            <td className="px-5 py-3 text-gray-400">{i + 1}</td>
-                                            <td className="px-5 py-3 text-gray-900 font-medium">{m.nombre}</td>
-                                            <td className="px-5 py-3 text-blue-800 font-mono font-semibold">{m.sigla}</td>
-                                            <td className="px-5 py-3 text-red-700 font-bold">{m.grupo}</td>
-                                        </tr>
-                                    ))}
+                                    <AnimatePresence initial={false}>
+                                        {materiasCaso.map((m, i) => (
+                                            <motion.tr
+                                                key={m.sigla}
+                                                layout
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: 20 }}
+                                                transition={{ delay: i * 0.05, type: "spring", stiffness: 280, damping: 24 }}
+                                                className="border-b border-gray-100 last:border-0"
+                                            >
+                                                <td className="px-5 py-3 text-gray-400">{i + 1}</td>
+                                                <td className="px-5 py-3 text-gray-900 font-medium">{m.nombre}</td>
+                                                <td className="px-5 py-3 text-blue-800 font-mono font-semibold">{m.sigla}</td>
+                                                <td className="px-5 py-3 text-red-700 font-bold">{m.grupo}</td>
+                                            </motion.tr>
+                                        ))}
+                                    </AnimatePresence>
                                 </tbody>
                             </table>
                         </div>
                     )}
-                </div>
+                </motion.div>
 
                 {/* CARTA FORMAL */}
-                <div className="mb-8">
-                    <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">
+                <motion.div variants={fadeUp} className="mb-8">
+                    <motion.h2
+                        variants={fadeUp}
+                        className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3"
+                    >
                         📄 Carta generada
-                    </h2>
-                    {/* Carta formal — con scroll horizontal si la pantalla es muy pequeña */}
-                    <div
+                    </motion.h2>
+                    <motion.div
+                        variants={fadeUp}
+                        whileHover={{ y: -2, boxShadow: "0 10px 30px rgba(0,0,0,0.10)" }}
+                        transition={{ type: "spring", stiffness: 220, damping: 22 }}
                         id="carta-imprimible"
                         className="bg-white text-black rounded-xl border border-gray-200 shadow-sm p-5 sm:p-8 md:p-12 text-sm leading-relaxed overflow-x-auto"
                         style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
                     >
-                        {/* Fecha y ciudad - Formato: Santa Cruz, 04 de marzo de 2026 */}
+                        {/* Fecha y ciudad */}
                         <p className="text-right mb-8 text-gray-600">
                             {ciudad}, {fechaLarga}
                         </p>
@@ -252,26 +322,29 @@ export default function CartaPage() {
                             <p><strong>C.I.:</strong> {datos.ci}</p>
                             <p><strong>Cel.:</strong> {datos.celular || "[Tu Número de Celular]"}</p>
                         </div>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
 
                 {/* Botones */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                    <button
+                <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-3">
+                    <motion.button
+                        whileHover={{ scale: 1.02, backgroundColor: "#f9fafb" }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={() => router.push("/malla")}
-                        className="flex-1 py-2.5 rounded-md bg-white hover:bg-gray-50 text-gray-600 font-semibold border border-gray-300 transition text-sm"
+                        className="flex-1 py-2.5 rounded-md bg-white text-gray-600 font-semibold border border-gray-300 transition text-sm"
                     >
                         ← Volver a Malla
-                    </button>
-                    <button
+                    </motion.button>
+                    <motion.button
+                        whileHover={{ scale: 1.02, backgroundColor: "#1e3a8a" }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={() => router.push("/descarga")}
-                        className="flex-1 py-3 rounded-md bg-blue-800 hover:bg-blue-900 text-white font-bold text-sm transition-all"
+                        className="flex-1 py-3 rounded-md bg-blue-800 text-white font-bold text-sm"
                     >
                         Continuar → Descargar
-                    </button>
-                </div>
-
-            </div>
-        </div>
+                    </motion.button>
+                </motion.div>
+            </motion.div>
+        </motion.div>
     )
 }
