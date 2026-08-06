@@ -321,7 +321,7 @@ export default function DatosPage() {
                                     name="ppa"
                                     type="text"
                                     inputMode="decimal"
-                                    placeholder="Ej: 62.50"
+                                    placeholder="Ej: 62"
                                     value={form.ppa}
                                     onChange={handleChange}
                                     className={`${inputClass} ${errors.ppa ? "border-red-500 ring-1 ring-red-400" : ""}`}
