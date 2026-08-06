@@ -48,7 +48,7 @@ const defaultDatos: DatosPersonales = {
     ci: "",
     celular: "",
     ppa: "",
-    gestion: "01/2026",
+    gestion: "02/2026",
     motivo: "",
     director: ""
 }
